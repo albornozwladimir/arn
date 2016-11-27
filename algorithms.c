@@ -1,21 +1,3 @@
-/*
- GTfold: compute minimum free energy of RNA secondary structure
- Copyright (C) 2008  David A. Bader
- http://www.cc.gatech.edu/~bader
-
- This program is free software: you can redistribute it and/or modify
- it under the terms of the GNU General Public License as published by
- the Free Software Foundation, either version 3 of the License, or
- (at your option) any later version.
-
- This program is distributed in the hope that it will be useful,
- but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- GNU General Public License for more details.
-
- You should have received a copy of the GNU General Public License
- along with this program.  If not, see <http://www.gnu.org/licenses/>.
- */
 
 /* AUTHORED by Amrita Mathuriya August 2007 - January 2009. Implemented multiloop energy function, internal loop energy function using heuristic and internal loop speedup algorithm, parallelization, corrected numerous bugs and commented whole GTfold.
 
@@ -38,17 +20,17 @@
 #include "constants.h"
 #include "main-c.h"
 #include "algorithms.h"
-#ifdef _OPENMP   /* The compiler automatically recognizes openmp support and includes the file accordingly*/
+#ifdef _OPENMP   /* Para poder paralelizar el calculo*/
 #include "omp.h"
 #endif
 
 #define DEBUG 0
 
-#define WM(i,j) WM[j][i]  /* This pragma is defined for readability purpose.*/
+#define WM(i,j) WM[j][i]  /* Se definen los tipos que contendrán los calculos.*/
 
 unsigned int chPairKey;
 
-//Constraint arrays
+//Constantes
 int plen = 0, flen = 0, sslen = 0;
 int *pbpi, *pbpj, *fbpi, *fbpj, *ss;
 
@@ -104,7 +86,7 @@ void initTables(int len) {
 #if DEBUG
 #ifdef DYNALLOC
 	if (len != LENGTH-1)
-		fprintf(stderr,"ERROR: in initTables, len (%5d) != LENGTH-1 (%5d)\n",len,LENGTH-1);
+		printf("ERROR: en initTables, largo (%5d) != Largo-1 (%5d)\n",len,LENGTH-1);
 #endif
 #endif
 

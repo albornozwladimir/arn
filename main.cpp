@@ -1,3 +1,4 @@
+//Librerias
 #include <errno.h>
 #include <iostream>
 #include <iomanip>
@@ -12,19 +13,15 @@
 #include <string.h>
 
 #include "loader.h"
-#include "loader.cc"
+#include "loader.cpp"
 #include "algorithms.h"
 #include "algorithms.c"
-#include "algorithms-partition.h"
-#include "algorithms-partition.c"
-#include "traceback.h"
-#include "traceback.c"
 #include "main.h"
 #include "main-c.h"
 
 using namespace std;
 
-/* GLOBAL VARIABLES */
+/* Variables globales */
 enum BOOL ILSA; /* A boolean variable to know if we are executing with Internal loop speedup algorithm (ILA) or not. ILSA finds the optimal internal loop by exploring all possibilities. */
 enum BOOL NOISOLATE;
 enum BOOL BPP; // calculating base pair probabilities
@@ -250,7 +247,7 @@ void free_variables() {
 	return;
 
 }
-
+/*
 void init_partition_function_variables(int bases) {
     QB = mallocTwoD(bases+1, bases+1);
     if(QB == NULL) {
@@ -284,7 +281,7 @@ void free_partition_function_variables(int bases) {
     freeTwoD(P, bases+1, bases+1);
 }
 
-
+*/
 /* main function - This calls
  *  1) Read command line arguments.
  *  2) populate() from loader.cc to read the thermodynamic parameters defined in the files given in data directory.
@@ -465,7 +462,7 @@ int main(int argc, char** argv) {
 		
 	}
 
-	fprintf(stdout,"Computing minimum free energy structure. . . \n");
+	printf("Computing minimum free energy structure. . . \n");
 	fflush(stdout);
 
 	t1 = get_seconds();
@@ -477,14 +474,14 @@ int main(int argc, char** argv) {
 
     // only fill the partition function structures if they are needed for BPP
     if(BPP) {
-        fprintf(stdout,"Filling Partition Function structure. . . \n");
+        printf("Filling Partition Function structure. . . \n");
         fflush(stdout);
 
         // malloc the arrays
-        init_partition_function_variables(bases);
+  //      init_partition_function_variables(bases);
 
         // fill the arrays
-        fill_partition_fn_arrays(bases, QB, Q, QM);
+    //    fill_partition_fn_arrays(bases, QB, Q, QM);
 
         fprintf(stdout," Done.\n");
 
@@ -494,7 +491,6 @@ int main(int argc, char** argv) {
 	fprintf(stdout,"MFE running time (in seconds): %9.6f\n\n", t1);
 
 	t1 = get_seconds();
-	trace(bases); /* Traces the optimal structure*/
 	t1 = get_seconds() - t1;
 
 	stringstream ss1, ss2;
@@ -539,15 +535,15 @@ int main(int argc, char** argv) {
 	printSequence(bases);
 	printConstraints(bases);
 	printStructure(bases);
-
+/*
     if(BPP) {
-        fillBasePairProbabilities(bases, structure, Q, QB, QM, P);
+  	      fillBasePairProbabilities(bases, structure, Q, QB, QM, P);
 
         printBasePairProbabilities(bases, structure, P);
 
         free_partition_function_variables(bases);
     }
-
+*/
 	free_variables();
 
 	return 0;

@@ -1,28 +1,4 @@
-/*
- GTfold: compute minimum free energy of RNA secondary structure
- Copyright (C) 2008  David A. Bader
- http://www.cc.gatech.edu/~bader
-
- This program is free software: you can redistribute it and/or modify
- it under the terms of the GNU General Public License as published by
- the Free Software Foundation, either version 3 of the License, or
- (at your option) any later version.
-
- This program is distributed in the hope that it will be useful,
- but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- GNU General Public License for more details.
-
- You should have received a copy of the GNU General Public License
- along with this program.  If not, see <http://www.gnu.org/licenses/>.
- */
-
-/* Modified by Amrita Mathuriya August 2007 - January 2009. 1) Functions are rewritten, removing calls of boost library functions and corrected bugs.
- * This file defines various functions to read the thermodynamic parameters from files in the data directory.
- * */
-/* Modified by Sonny Hernandez May 2007 - Aug 2007. All comments added marked by "SH: "*/
-/* Modified by Sainath Mallidi August 2009 -  "*/
-
+//Librerias
 #include <string.h>
 #include <stdlib.h>
 #include "loader.h"
@@ -35,38 +11,38 @@
 
 using namespace std;
 
-//Global Variables
+//Variables globales
 int poppen[5];
 int maxpen;
 int eparam[11]; /* Amrita: I am not sure of what does this array contain at different values.*/
-int multConst[3]; /* Amrita: I have copied multiloop penalties into this array */
-int dangle[4][4][4][2]; /* Dangling energies */
-int inter[31]; /* Size penalty for internal loops */
-int bulge[31]; /* Size penalty for bulges*/
-int hairpin[31]; /* Size penalty for hairpin loops */
+int multConst[3]; // Respaldo de las penalizaciones para multiloops
+int dangle[4][4][4][2]; // Energias colindantes
+int inter[31]; // Tamaño de penalización para loops internos
+int bulge[31]; // Tamaño de penalización para bultos
+int hairpin[31]; // Tamaño de penalizaciòn para loops de Horquilla
 #if 0
 int stack[4][4][4][4];
 int tstkh[4][4][4][4];
 int tstki[4][4][4][4];
 #else
-int stack[256]; /* Stacking energy for stack loops */
-int tstkh[256]; /* Terminal stacking energy for hairpin loops */
-int tstki[256]; /* Terminal stacking energy for internal loops */
+int stack[256]; // Pilas de energía para pilas loop
+int tstkh[256]; // Pilas de energia para loops de horquilla
+int tstki[256]; //  Terminal de pilas de energia para loops internos
 #endif
 int tloop[maxtloop + 1][2];
 int numoftloops;
-int iloop22[5][5][5][5][5][5][5][5]; /* 2*1 internal loops*/
-int iloop21[5][5][5][5][5][5][5]; /* 2*1 internal loops */
-int iloop11[5][5][5][5][5][5]; /*1*1 internal loops */
+int iloop22[5][5][5][5][5][5][5][5]; /* 2*1 loops internos*/
+int iloop21[5][5][5][5][5][5][5]; /* 2*1 loops internos */
+int iloop11[5][5][5][5][5][5]; /*1*1 loops internos */
 int coax[6][6][6][6];
 int tstackcoax[6][6][6][6];
 int coaxstack[6][6][6][6];
 int tstack[6][6][6][6];
 int tstkm[6][6][6][6];
 
-int auend; /* For AU penalty */
+int auend; // Para penalizacion AU
 int gubonus;
-int cint; /* cint, cslope, c3 are used for poly C hairpin loops */
+int cint; // cint, cslope y c3 son usados por poly C loops de horquilla
 int cslope;
 int c3;
 int efn2a;
@@ -76,13 +52,11 @@ int triloop[maxtloop + 1][2];
 int numoftriloops;
 int init;
 int gail;
-float prelog; /* Used for loops having size > 30 */
+float prelog; // Usado por los loops que tengan tamaño mayor a 30
 
 string EN_DATADIR;
 
 void populate(const char *userdatadir,bool userdatalogic) {
-
-	cout << "Loading in GTfold data files from ";
 
 #ifndef GENBIN
 	if (!userdatalogic) {
@@ -96,7 +70,7 @@ void populate(const char *userdatadir,bool userdatalogic) {
 	EN_DATADIR = "data";
 #endif
 
-	//Handle the ending forward slash case
+	//Para el final del archivo
 	if (EN_DATADIR[EN_DATADIR.length() - 1] != '/') {
 		EN_DATADIR += "/";
 	}
@@ -128,7 +102,7 @@ void populate(const char *userdatadir,bool userdatalogic) {
 	cout << "Done loading data files." << endl << endl;
 }
 
-char baseToDigit(std::string base) {
+char baseToDigit(string base) {
 	if (!strcmp(base.c_str(), "A")) {
 		return '1';
 	}

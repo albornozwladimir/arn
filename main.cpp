@@ -12,9 +12,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "loader.h"
 #include "loader.cpp"
-#include "algorithms.h"
 #include "algorithms.c"
 #include "main.h"
 #include "main-c.h"

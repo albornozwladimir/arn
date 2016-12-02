@@ -2,6 +2,7 @@
 #include <errno.h>
 #include <iostream>
 #include <iomanip>
+#include <fstream>
 #include <string>
 #include <math.h>
 #include <time.h>
@@ -14,14 +15,13 @@
 #include "loader.cpp"
 #include "algorithms.c"
 #include "main.h"
-//#include "main-c.h"
 
 using namespace std;
 
 /* Variables globales */
-enum BOOL ILSA; /* A boolean variable to know if we are executing with Internal loop speedup algorithm (ILA) or not. ILSA finds the optimal internal loop by exploring all possibilities. */
+enum BOOL ILSA; /* Una variable booleana para saber si estamos ejecutando con el algoritmo de aceleración de bucle interno (ILA) 
+o no. ILSA encuentra el bucle interno óptimo explorando todas las posibilidades. */
 enum BOOL NOISOLATE;
-enum BOOL BPP; // calculating base pair probabilities
 enum BOOL USERDATA;
 enum BOOL PARAMS;
 enum BOOL LIMIT_DISTANCE;
@@ -58,213 +58,82 @@ int W[LENGTH];
 int indx [LENGTH];
 #endif
 
-
-/* Function for calculating time */
-double get_seconds() {
+// Funcion para calcular el tiempo
+double segundos() {
 	struct timeval tv;
 	gettimeofday(&tv, NULL);
 	return (double) tv.tv_sec + (double) tv.tv_usec / 1000000.0;
 }
 
-/*Funcion para imprimir la secuencia*/
-void printSequence(int len) {
-	int i = 1;
-	for (i = 1; i <= len; i++) {
-		if (RNA1[i] == 0)
-			printf("A");
-		else if (RNA1[i] == 1)
-			printf("C");
-		else if (RNA1[i] == 2)
-			printf("G");
-		else if (RNA1 [i] == 3)
-			printf("T");
-		else
-			printf("N");
-	}
-	printf("\n");
-}
-
-/* Inicializacion de variables globales. */
+// Inicialización de variables globales
 void init_variables(int len) {
-
 	int i;
-
 #ifdef DYNALLOC
 	LENGTH = len + 1;
-
 	RNA = (unsigned char *) malloc(LENGTH * sizeof(unsigned char));
-	if (RNA == NULL) {
-		perror("Cannot allocate variable 'RNA'");
-		exit(-1);
-	}
 	RNA1 = (unsigned char *) malloc(LENGTH * sizeof(unsigned char));
-	if (RNA1 == NULL) {
-		perror("Cannot allocate variable 'RNA'");
-		exit(-1);
-	}
 	structure = (int *) malloc(LENGTH * sizeof(int));
-	if (structure == NULL) {
-		perror("Cannot allocate variable 'structure'");
-		exit(-1);
-	}
-
 	V = (int *) malloc(((LENGTH - 1) * (LENGTH) / 2 + 1) * sizeof(int));
-	if (V == NULL) {
-		perror("Cannot allocate variable 'V'");
-		exit(-1);
-	}
-
 	W = (int *) malloc(LENGTH * sizeof(int));
-	if (W == NULL) {
-		perror("Cannot allocate variable 'W'");
-		exit(-1);
-	}
-
 	VBI = (int **) malloc(LENGTH * sizeof(int *));
-	if (VBI == NULL) {
-		perror("Cannot allocate variable 'VBI'");
-		exit(-1);
-	}
 	for (i = 0; i < LENGTH; i++) {
 		VBI[i] = (int *) malloc(LENGTH * sizeof(int));
-		if (VBI[i] == NULL) {
-			perror("Cannot allocate variable 'VBI[i]'");
-			exit(-1);
-		}
 	}
-
 	VM = (int **) malloc(LENGTH * sizeof(int *));
-	if (VM == NULL) {
-		perror("Cannot allocate variable 'VM'");
-		exit(-1);
-	}
 	for (i = 0; i < LENGTH; i++) {
 		VM[i] = (int *) malloc(LENGTH * sizeof(int));
-		if (VM[i] == NULL) {
-			perror("Cannot allocate variable 'VM[i]'");
-			exit(-1);
-		}
 	}
-
 	WM = (int **) malloc(LENGTH * sizeof(int *));
-	if (WM == NULL) {
-		perror("Cannot allocate variable 'WM'");
-		exit(-1);
-	}
 	for (i = 0; i < LENGTH; i++) {
 		WM[i] = (int *) malloc(LENGTH * sizeof(int));
-		if (WM[i] == NULL) {
-			perror("Cannot allocate variable 'WM[i]'");
-			exit(-1);
-		}
 	}
-
 	indx = (int *) malloc(LENGTH * sizeof(int));
-	if (indx == NULL) {
-		perror("Cannot allocate variable 'indx'");
-		exit(-1);
-	}
-
 	constraints = (int*) malloc((len + 1) * sizeof(int));
-	if (constraints == NULL) {
-		perror("Cannot allocate variable 'constraints'");
-		exit(-1);
-	}
-
 #endif
 	return;
 }
-
-/* deallocate global variables */
-void free_variables() {
-	int i;
-
-#ifdef DYNALLOC
-	free(indx);
-	for (i = 0; i < LENGTH; i++)
-		free(WM[i]);
-	free(WM);
-	for (i = 0; i < LENGTH; i++)
-		free(VM[i]);
-	free(VM);
-	for (i = 0; i < LENGTH; i++)
-		free(VBI[i]);
-	free(VBI);
-	free(W);
-	free(V);
-	free(constraints);
-	free(structure);
-	free(RNA);
-	free(RNA1);
-
-#endif
-
-	return;
-
-}
+/* Funcion principal
+ *  1) Leer los argumentos de la línea de comandos.
+ *  2) populate() de loader.cpp para leer los parámetros termodinámicos definidos 
+ *     en los archivos dados en el directorio de datos.
+ *  3) Inicializar variables
+ *  4) Las llamadas que calculan la función definida en algoritmos.c para rellenar las tablas de energía.
+ *  */
 int main(int argc, char** argv) {
 	int i;
 	ifstream cf;
 	int bases;
 	string s, seq;
 	int energy;
+	float energia;
 	double t1;
 	ILSA = FALSE;
 	NOISOLATE = FALSE;
-	BPP = FALSE;
-	/* Reading command line arguments */
-	//if (argc < 2)
-		//help();
-
-	int fileIndex = 0, consIndex = 0, dataIndex = 0, paramsIndex=0, lcdIndex = 0; // fNCIndex = 0;
+	/* Leyendo linea de comandos */
+	int fileIndex = 0, consIndex = 0, dataIndex = 0, paramsIndex=0, lcdIndex = 0;
 	i = 1;
 	while (i < argc) {
 		if (argv[i][0] == '-') {
-			if (strcmp(argv[i], "-ilsa") == 0)
-			{
+			if (strcmp(argv[i], "-ilsa") == 0) {
 				ILSA = TRUE;
-			} else if (strcmp(argv[i], "-noisolate") == 0) 
-			{
+			} else if (strcmp(argv[i], "-noisolate") == 0) {
 				NOISOLATE = TRUE;
-			} else if (strcmp(argv[i], "-help") == 0) 
-			//{
-			//	help();
-			//} else if (strcmp(argv[i], "-constraints") == 0) 
-			{
+			} else if (strcmp(argv[i], "-constraints") == 0) {
 				if (i < argc)
 					consIndex = ++i;
-			//	else
-				//	help();
 			} else if (strcmp(argv[i], "-params")==0) { 
 				PARAMS = TRUE;			  
 				if (i < argc)
 					paramsIndex = ++i;
-				//else
-					//help();
 			} else if (strcmp(argv[i], "-datadir") == 0) {
 				USERDATA = TRUE;
 				if (i < argc)
 					dataIndex = ++i;
-				//else
-					//help();
 			} else if (strcmp(argv[i], "-limitCD") == 0)
 			{
 				if (i < argc)
 					lcdIndex = ++i;
-				//else
-					//help();	
-			}  else if (strcmp(argv[i], "-basepairprobabilities") == 0)
-			{
-				BPP = TRUE;
 			}
-			/*else if (strcmp(argv[i], "-forceNC") == 0)
-			{
-				if (i < argc)
-					fNCIndex = ++i;
-				else
-					help();	
-			}*/
-
 		} else {
 			fileIndex = i;
 		}
@@ -274,14 +143,12 @@ int main(int argc, char** argv) {
 	if (cf != NULL)
 		printf("Archivo abierto.\n\n");
 	else {
-		printf("File open failed.\n\n");
+		printf("Error al abrir el archivo.\n\n");
 		exit(-1);
 	}
-
 	seq = "";
 	s = "";
-
-	//Handle FASTA input
+	//Para archivo tipo FASTA
 	char ss[10000];
 	cf.getline(ss, 10000);
 	if (ss[0] != '>') {
@@ -292,205 +159,38 @@ int main(int argc, char** argv) {
 			fline = strtok(NULL, " ");
 		}
 	}
-
 	while (!cf.eof()) {
 		cf >> s;
 		seq.append(s);
 		s = "";
 	}
 	s = seq;
-
 	bases = s.length();
-
 	init_variables(bases);
-
-	cout << "Sequence: " << s << endl;   // Se imprime la secuencia
-	fprintf(stdout, "Sequence length: %5d\n\n", bases); // Se imprime el largo de la secuencia
-
+	cout << "Secuencia ingresada: " << s << endl;   // Se imprime la secuencia
+	cout << "Largo de la secuencia: " << bases <<endl; // Se imprime el largo de la secuencia
 	cf.close();
-
 	int **fbp = NULL, **pbp = NULL;
-	int numfConstraints = 0, numpConstraints = 0;
-
-	if (consIndex != 0)
-	{
-		GTFOLD_FLAGS r = initialize_constraints(&fbp, &pbp, numpConstraints, numfConstraints, argv[consIndex]);
-		if (r == ERR_OPEN_FILE)
-		{
-			free_variables();
-			exit(-1);
-		}
-	}
-	
-	
 	if (handle_IUPAC_code(s, bases)  == FAILURE)
 	{
-		free_variables();
 		exit(0);
-	}
-		
+	}	
 	if(USERDATA==TRUE)
 		populate(argv[dataIndex],true);
 	else if (PARAMS == TRUE)
 		populate(argv[paramsIndex],false);
 	else
-		populate("Turner99",false); /* Defined in loader.cc file to read in the thermodynamic parameter values from the tables in the ../data directory. */
-
-	initTables(bases); /* Se inicializan variables globales */
-	int lCD = -1;
-	if (lcdIndex != 0)
-	{
-		lCD = atoi(argv[lcdIndex]);
-		fprintf(stdout, "Maximum Contact Distance = %d\n\n", lCD);
-		limit_contact_distance(lCD, bases);
-		
-	}
-
-	printf("Computing minimum free energy structure. . . \n");
-	fflush(stdout);
-
-	t1 = get_seconds();
-		energy = calculate(bases, fbp, pbp, numfConstraints, numpConstraints); /* Runs the Dynamic programming algorithm to calculate the optimal energy. Defined in algorithms.c file.*/
-    //energy = 0;
-	t1 = get_seconds() - t1;
-	printf("Energia minima libre = %12.2f\n", energy/100.00);
-	printf("El calculo demoró (segundos): %9.6f\n\n", t1);
-	t1 = get_seconds();
-	t1 = get_seconds() - t1;
-	stringstream ss1, ss2;
-	char suboptfile[1024];
-	ss1 << bases;
-	ss2 << energy/100.0;
-
-	i = 0;
-
-	strcpy (suboptfile, argv[fileIndex]);
-	strcat ( suboptfile, ".ct");
-	ofstream outfile;
-	outfile.open ( suboptfile );
-
-	fprintf(stdout, "Writing secondary structure to the file: %s\n", suboptfile);
-
-#if 0
-	outfile << bases << " " << energy/100.0;
-	outfile << endl << s;
-
-	for ( i = 1; i <= bases; i++ )
-		outfile << "\n" <<  i << " " << structure[i] ;
-#endif
-	/* Generate the output file containing the optimal secondary structure in .ct format */
-#if 1
-	outfile << bases << "\t  dG = " << energy/100.0;
-	i = 1;
-	while ( i <= bases ) {
-		outfile << endl << i << "\t" << s[i-1] << "\t" << i-1 << "\t" << (i+1)%(bases+1) << "\t" << structure[i] << "\t" << i;
-		i++;
-	}
-	outfile << endl;
-#endif
-
-
-	outfile.close();
-
-	printf("\n\n");
-	printf("Traceback running time (in seconds): %9.6f\n", t1);
-
-	printf("\n\nFolding complete\n\n");
-	printSequence(bases);
-	free_variables();
-
+		populate("combinaciones",false); //Lectura de archivos termodinámicos
+	initTables(bases); // Se inicializan variables globales de acuerdo a las bases de la secuencia
+	t1 = segundos();
+	energy = calculate(bases, fbp, pbp, 0, 0); /* Ejecuta el algoritmo de programación dinámica para calcular
+	 la energía óptima. Definido en el archivo algorithms.c*/
+    t1 = segundos() - t1;
+    energia = energy/100.00;
+	cout << "\nEnergia minima libre: " << energia <<endl;
+	cout << "\nEl calculo demoró "<< t1 << " segundos" <<endl;
 	return 0;
-
 }
-
-
-GTFOLD_FLAGS initialize_constraints(int*** fbp, int ***pbp, int& numpConstraints, int& numfConstraints, const char* constr_file)
-{
-	ifstream cfcons;
-
-	fprintf(stdout, "Running with constraints\n");
-	//fprintf(stdout, "Opening constraint file: %s\n", argv[consIndex]);
-	fprintf(stdout, "Opening constraint file: %s\n", constr_file);
-
-	cfcons.open(constr_file, ios::in);
-	if (cfcons != NULL)
-		fprintf(stdout, "Constraint file opened.\n");
-	else {
-		fprintf(stderr, "Error opening constraint file\n\n");
-		cfcons.close();
-		return ERR_OPEN_FILE; //exit(-1);
-	}
-
-	char cons[100];
-
-	while (!cfcons.eof()) {
-		cfcons.getline(cons, 100);
-		if (cons[0] == 'F' || cons[0] == 'f')
-			numfConstraints++;
-		if (cons[0] == 'P' || cons[0] == 'p')
-			numpConstraints++;
-	}
-	cfcons.close();
-
-	fprintf(stdout, "Number of Constraints given: %d\n\n", numfConstraints
-			+ numpConstraints);
-	if (numfConstraints + numpConstraints != 0)
-		fprintf(stdout, "Reading Constraints.\n");
-	else {
-		fprintf(stderr, "No Constraints found.\n\n");
-		return NO_CONS_FOUND;
-	}
-
-	*fbp = (int**) malloc(numfConstraints * sizeof(int*));
-	*pbp = (int**) malloc(numpConstraints * sizeof(int*));
-
-	int fit = 0, pit = 0, it = 0;
-
-	for (it = 0; it < numfConstraints; it++) {
-		(*fbp)[it] = (int*) malloc(2* sizeof (int));
-	}
-	for(it=0; it<numpConstraints; it++) {
-		(*pbp)[it] = (int*)malloc(2*sizeof(int));
-	}
-	cfcons.open(constr_file, ios::in);
-
-	while(!cfcons.eof()) {
-		cfcons.getline(cons,100);
-		char *p=strtok(cons, " ");
-		p = strtok(NULL, " ");
-		if(cons[0]=='F' || cons[0]=='f') {
-			int fit1=0;
-			while(p!=NULL) {
-				(*fbp)[fit][fit1++] = atoi(p);
-				p = strtok(NULL, " ");
-			}
-			fit++;
-		}
-		if( cons[0]=='P' || cons[0]=='p') {
-			int pit1=0;
-			while(p!=NULL) {
-				(*pbp)[pit][pit1++] = atoi(p);
-				p = strtok(NULL, " ");
-			}
-			pit++;
-		}
-	}
-
-	fprintf(stdout, "Forced base pairs: ");
-	for(it=0; it<numfConstraints; it++) {
-		for(int k=1;k<= (*fbp)[it][2];k++)
-			fprintf(stdout, "(%d,%d) ", (*fbp)[it][0]+k-1, (*fbp)[it][1]-k+1);
-	}
-	fprintf(stdout, "\nProhibited base pairs: ");
-	for(it=0; it<numpConstraints; it++) {
-		for(int k=1;k<= (*pbp)[it][2];k++)
-			fprintf(stdout, "(%d,%d) ", (*pbp)[it][0]+k-1, (*pbp)[it][1]-k+1);
-	}
-	fprintf(stdout, "\n\n");
-	
-	return SUCCESS;
-}
- 
 
 GTFOLD_FLAGS handle_IUPAC_code(const string& s, const int bases)
 {
@@ -498,13 +198,11 @@ GTFOLD_FLAGS handle_IUPAC_code(const string& s, const int bases)
 	int stack_count=0;
 	bool unspecd=0;
 	stack_unidentified_base=new int[bases];
-
-	// SH: Conversion of the sequence to numerical values.
+	// SH: Conversion de la secuencia en valores numericos.
 	for(int i = 1; i <= bases; i++) {
 		RNA[i] = getBase(s.substr(i-1,1));
 		RNA1[i] = getBase1(s.substr(i-1,1));
 		if (RNA[i]=='X') {
-			fprintf(stderr,"ERROR: Base unrecognized\n");
 			return FAILURE; //exit(0);
 		}
 		else if(RNA[i]!='X' && RNA1[i]=='N'){
@@ -512,80 +210,5 @@ GTFOLD_FLAGS handle_IUPAC_code(const string& s, const int bases)
 			stack_unidentified_base[stack_count]=i;
 			stack_count++;
 		}
-
 	}
-	if(unspecd) {
-		printf("IUPAC codes have been detected at positions:");
-
-		for(int i=0;i<stack_count;i++)
-		{
-			printf("%d , ",stack_unidentified_base[i]);
-		}
-		printf("\n");
-		printf("You may wish to resubmit the sequence with fully specified positions. Alternatively, GTfold will fold the sequence under the standard assumption that these ambiguous positions do not pair.  Do you wish to continue with the current computation? <Y/N>");
-
-		char reply;
-		scanf("%c",&reply);
-
-		return (reply=='n'||reply=='N')?(FAILURE):(SUCCESS);
-	}
-	else 
-		return SUCCESS;
-
 }
-
-void limit_contact_distance(int lCD, int len)
-{
-	for (int ii = 1; ii <= len; ++ii) 
-	{
-		for(int jj = ii+lCD; jj <= len; ++jj)
-		{
-			constraints[ii] = -1;
-			constraints[jj] = -1;
-		//	cout << '(' << ii << ',' << jj << ')' << ' ';
-		}
-	}
-	cout << endl;
-}
-
-
-/*
-void force_noncanonical_basepair(const char* ncb, int len)
-{
-	if (ncb == 0 || ncb[0] == '\0') return;
-	
-	printf("Permitted noncanonical base pairs : \n");	
-
-	string ncb1(ncb);
-	
-	for (unsigned int i =0 ; i < ncb1.size(); ++i)
-	{
-		ncb1[i] = toupper(ncb1[i]);
-	}
-	
-	vector<string> tokens;
-	tokenize(ncb1, tokens, ",");	
-	
-	for (unsigned int i = 0; i < tokens.size(); ++i)
-	{
-		trim_spaces(tokens[i]);
-		if (tokens.size() != 3 && tokens[i][1] != '-') 
-		{
-			// ignore
-			continue;
-		}
-
-		char b1 = getBase(tokens[i].substr(0,1));
-		char b2 = getBase(tokens[i].substr(2,1));
-
-		int r1=0;
-		r1 = update_chPair(b1, b2);			
-		if (r1 == 1) 
-		{
-			printf("(%c,%c) ",  tokens[i][0], tokens[i][2]) ;
-		}
-	}
-
-	printf("\n\n");
-}
-*/

@@ -117,15 +117,11 @@ int checkSS(int i, int j) {
 
 int calculate(int len, int **forceList, int **prohibitList, int forcelen, int prohibitlen) {
 	int b, i, j, it, k;
-	
-	printf("chPairKey %d ", chPairKey);
-
 	for(i=1;i<=len;i++) 
 	{
 		if(RNA1[i]=='N') 
 			constraints[i] = -1;
 	}	
-
 	if (prohibitlen != 0) 
 	{
 		for (it = 0; it < prohibitlen; it++) 
@@ -140,7 +136,6 @@ int calculate(int len, int **forceList, int **prohibitList, int forcelen, int pr
 			}
 		}
 	}
-
 	if (forcelen != 0) 
 	{
 		printf("Running with constraints\n");

@@ -66,18 +66,12 @@ void populate(const char *userdatadir,bool userdatalogic) {
 	} else {
 		EN_DATADIR.assign(userdatadir);
 	}
-#else
-	EN_DATADIR = "data";
 #endif
 
 	//Para el final del archivo
 	if (EN_DATADIR[EN_DATADIR.length() - 1] != '/') {
 		EN_DATADIR += "/";
 	}
-
-
-	cout << EN_DATADIR << endl;
-
 	initMiscloopValues("miscloop.dat");
 	// miscloop.dat - Miscellaneous loop file
 	initStackValues("stack.dat");
@@ -98,8 +92,6 @@ void populate(const char *userdatadir,bool userdatalogic) {
 	// int22.dat - free energies for 2 x 2 interior loops
 	initInt11Values("int11.dat");
 	// int11.dat - free energies for 1 x 1 interior loops
-
-	cout << "Done loading data files." << endl << endl;
 }
 
 char baseToDigit(string base) {
@@ -181,8 +173,7 @@ int initStackValues(string fileName) {
 	char currentLine[256];
 	string currentString;
 	string s;
-
-	// Initialize the array with INFINITY
+	// Inicializar el arreglo con infinito
 	for (i = 0; i < 4; i++) {
 		for (j = 0; j < 4; j++) {
 			for (k = 0; k < 4; k++) {
@@ -192,47 +183,36 @@ int initStackValues(string fileName) {
 			}
 		}
 	}
-
 	fileName = EN_DATADIR + fileName;
 	cf.open(fileName.c_str(), ios::in);
 	if (cf.fail()) {
 		cerr << "File open failed" << endl;
 		exit(-1);
 	}
-
 	// Read the thermodynamic parameters.
 	// The 24 first lines are junk we don't need
 	for (index = 1; index <= 15; index++) {
 		cf.getline(currentLine, 256);
 	}
-
 	i = 0;
 	kk = 0;
 	ii = 0;
 	jj = 0;
 	ll = 0;
-
 	while (i < 16) {
-
 		if (i % 4 == 0)
 			for (index = 1; index < 9; index++)
 				cf.getline(currentLine, 256);
-
 		cf.getline(currentLine, 256);
 		s = currentLine;
 		j = 0;
-
 		ll = 0;
 		jj = 0;
-
 		int z = 0;
 		int r = 0;
-
 		while (s[z] != '\0') {
-
 			if (s[z] == ' ')
 				z++;
-
 			else if (s[z] == '.') {
 				z++;
 				ll++;
@@ -248,9 +228,7 @@ int initStackValues(string fileName) {
 				while (s[z] != ' ' && s[z] != '\0') {
 					value[x++] = s[z++];
 				}
-
 				value[x] = '\0';
-
 				int temp = (int) floor(100.0 * atof(value) + .5);
 				stack[fourBaseIndex(ii,jj,kk,ll)] = temp;
 				r++;
@@ -265,15 +243,9 @@ int initStackValues(string fileName) {
 		i++;
 		if (!(i % 4))
 			ii++;
-
-		/*    jj = 1; */
 		kk = (i % 4);
-
 	}
 	cf.close();
-#if 0
-	cout << " Done!" << endl;
-#endif
 	return 0;
 }
 
@@ -294,33 +266,28 @@ int initMiscloopValues(string fileName) {
 
 	char currentWord[256];
 	string s;
-	ifstream cf; //cf = current file
-
+	ifstream cf; //Manejo de archivos
 	fileName = EN_DATADIR + fileName;
-#if 0
-	cout << "Getting miscloop values from " << fileName << endl;
-#endif
 	cf.open(fileName.c_str(), ios::in);
 	if (cf.fail()) {
-		cerr << "File open failed" << endl;
+		cerr << "El archivo no se ha podido abrir" << endl;
 		exit(-1);
 	}
 	s = "";
-
 	cf >> currentWord;
-	for (int index = 1; index < 13; index++) { // There are total 12 values to read in.
+	for (int index = 1; index < 13; index++) { // Lectura de 12 valores
 		while (strcmp(currentWord, "-->")) {
 			cf >> currentWord;
 		}
 		if (index == 1) {
 			cf >> currentWord;
 			prelog = 100 * atof(currentWord);
-			cout << "prelog = " << prelog << endl;
+			//cout << "prelog = " << prelog << endl;
 		}
 		if (index == 2) {
 			cf >> currentWord;
 			maxpen = int(atof(currentWord) * 100.0 + .5);
-			cout << "maxpen = " << maxpen << endl;
+			//cout << "maxpen = " << maxpen << endl;
 		}
 		if (index == 3) {
 			for (int count = 1; count <= 4; count++) {
@@ -414,9 +381,6 @@ int initMiscloopValuesOLD(string fileName) {
 	ifstream cf; //cf = current file
 
 	fileName = EN_DATADIR + fileName;
-#if 0
-	cout << "Getting miscloop values from " << fileName << endl;
-#endif
 	cf.open(fileName.c_str(), ios::in);
 	if (cf.fail()) {
 		cerr << "File open failed" << endl;
@@ -463,8 +427,6 @@ int initMiscloopValuesOLD(string fileName) {
 				cf >> currentWord;
 				s = currentWord;
 				eparam[table[count]] = (int) (atof(s.c_str()) * 100 + 0.5);
-				//printf(" %d  ", eparam[table[count]]);
-				//cout << "eparam[" << table[count] << "] = "<< eparam[table[count]] << endl;
 			}
 		}
 		if (index == 5) {
@@ -473,7 +435,6 @@ int initMiscloopValuesOLD(string fileName) {
 				cf >> currentWord;
 				s = currentWord;
 				table[count] = (int) (atof(s.c_str()) * 100 + 0.5);
-				//cout << "efn2[" << count << "] = "<< table[count] << endl;
 			}
 			efn2a = table[1];
 			efn2b = table[2] - 1;
@@ -482,56 +443,45 @@ int initMiscloopValuesOLD(string fileName) {
 		if (index == 6) {
 			cf >> currentWord;
 			auend = (int) (100 * atof(currentWord));
-			//cout << "auend = " << auend << endl;
 		}
 		if (index == 7) {
 			cf >> currentWord;
 			gubonus = (int) (100 * atof(currentWord));
-			//cout << "gubonus = " << gubonus << endl;
 		}
 		if (index == 8) {
 			cf >> currentWord;
 			cslope = (int) (100 * atof(currentWord)) + 1;
-			//cout << "cslope = " << cslope << endl;
 		}
 		if (index == 9) {
 			cf >> currentWord;
 			cint = (int) (100 * atof(currentWord));
-			//cout << "cint = " << cint << endl;
 		}
 		if (index == 10) {
 			cf >> currentWord;
 			c3 = (int) (100 * atof(currentWord)) + 1;
-			//cout << "c3 = " << c3 << endl;
 		}
 		if (index == 11) {
 			cf >> currentWord;
 			init = (int) (100 * atof(currentWord)) + 1;
-			//cout << "init = " << init << endl;
 		}
 		if (index == 12) {
 			cf >> currentWord;
 			gail = (int) floor(.5 + atof(currentWord));
-			//cout << "gail = " << gail << endl;
 		}
 	}
 
 	cf.close();
-#if 0
-	cout << " Done!" << endl;
-#endif
 	return 0;
 }
 
 int initDangleValues(string fileName) {
-	ifstream cf; //cf = current file
+	ifstream cf; // Manejo de archivos
 	char currentLine[256];
 	string currentString;
 	string s;
 	int index;
 	int i, j, k, l;
 	int ii, jj, kk, ll; // ii = 1st base, jj = 2nd base, kk = 3rd base, ll = 1 up or 2 low
-
 	for (i = 0; i < 4; i++) {
 		for (j = 0; j < 4; j++) {
 			for (k = 0; k < 4; k++) {
@@ -541,11 +491,10 @@ int initDangleValues(string fileName) {
 			}
 		}
 	}
-
 	fileName = EN_DATADIR + fileName;
 	cf.open(fileName.c_str(), ios::in);
 	if (cf.fail()) {
-		cerr << "File open failed" << endl;
+		cerr << "La apertura del archivo a fallado" << endl;
 		exit(-1);
 	}
 
@@ -625,10 +574,6 @@ int initDangleValues(string fileName) {
 
 	}
 	cf.close();
-
-#if 0
-	cout << " Done!" << endl;
-#endif
 	return 0;
 }
 
@@ -641,9 +586,6 @@ int initLoopValues(string fileName) {
 	int index;
 	int tempValue = 0;
 
-#if 0
-	cout << "Getting loop values...";
-#endif
 	fileName = EN_DATADIR + fileName;
 	cf.open(fileName.c_str(), ios::in);
 	if (cf.fail()) {
@@ -653,8 +595,6 @@ int initLoopValues(string fileName) {
 	// The 4 first lines are junk we don't need
 	for (index = 1; index <= 4; index++) {
 		cf.getline(currentLine, 256);
-		//s = currentLine;
-		//cout << s << endl;
 	}
 	while (index < 30) {
 		for (int j = 1; j <= 4; j++) {
@@ -682,10 +622,6 @@ int initLoopValues(string fileName) {
 		}
 	}
 	cf.close();
-
-#if 0
-	cout << " Done!" << endl;
-#endif
 	return 0;
 }
 
@@ -707,31 +643,26 @@ int initTstkhValues(string fileName) {
 			}
 		}
 	}
-
 	fileName = EN_DATADIR + fileName;
 	cf.open(fileName.c_str(), ios::in);
 	if (cf.fail()) {
 		cerr << "File open failed" << endl;
 		exit(-1);
 	}
-
 	// The 27 first lines are junk we don't need
 	for (index = 1; index <= 15; index++) {
 		cf.getline(currentLine, 256);
 	}
-
 	i = 0;
 	kk = 0;
 	ii = 0;
 	jj = 0;
 	ll = 0;
-
 	while (i < 16) {
 
 		if (i % 4 == 0)
 			for (index = 1; index < 9; index++)
 				cf.getline(currentLine, 256);
-
 		cf.getline(currentLine, 256);
 		s = currentLine;
 		j = 0;
@@ -789,9 +720,6 @@ int initTstkhValues(string fileName) {
 	}
 
 	cf.close();
-#if 0
-	cout << " Done!" << endl;
-#endif
 	return 0;
 }
 
@@ -961,9 +889,6 @@ int initTloopValues(string fileName) {
 		//cout << " --  "<< tloop[numoftloops][0] << " | " << tloop[numoftloops][1] << endl;
 	}
 	cf.close();
-#if 0
-	cout << " Done!" << endl;
-#endif
 	return 0;
 }
 
@@ -993,10 +918,6 @@ int initInt22Values(string fileName) {
 
 	int base[4];
 	int l, m;
-
-#if 0
-	cout << "Getting Int22 values...";
-#endif
 	fileName = EN_DATADIR + fileName;
 	cf.open(fileName.c_str(), ios::in);
 	if (cf.fail()) {
@@ -1086,9 +1007,6 @@ int initInt22Values(string fileName) {
 	}
 
 	cf.close();
-#if 0
-	cout << " Done!" << endl;
-#endif
 	return 0;
 }
 
@@ -1365,8 +1283,5 @@ int initInt11Values(string fileName) {
 	}
 
 	cf.close();
-#if 0
-	cout << " Done!" << endl;
-#endif
 	return 0;
 }

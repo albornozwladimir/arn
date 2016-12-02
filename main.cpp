@@ -52,7 +52,7 @@ unsigned char RNA1[LENGTH];
 int structure[LENGTH];
 int VBI[LENGTH][LENGTH];
 int VM[LENGTH][LENGTH];
-int V[(LENGTH-1)*(LENGTH)/2 + 1]; /* int V[LENGTH][LENGTH]; */
+int V[(LENGTH-1)*(LENGTH)/2 + 1]; // int V[LENGTH][LENGTH];
 int WM[LENGTH][LENGTH];
 int W[LENGTH];
 int indx [LENGTH];

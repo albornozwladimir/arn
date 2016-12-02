@@ -1,18 +1,3 @@
-
-/* AUTHORED by Amrita Mathuriya August 2007 - January 2009. Implemented multiloop energy function, internal loop energy function using heuristic and internal loop speedup algorithm, parallelization, corrected numerous bugs and commented whole GTfold.
-
- * Amrita: Please note that, in this file same recursion formulas is being calculated in more than one functions.
- * This is done for performance improvement to reduce the redundant computations for various cases. The duplicate codes are not documented again at some places.
- * The arrays to be calculated are VBI, VM, V and WM for every  point (i,j) where j > i. Then W(j) needs to be calculated for j= 1 to N.
- * NOTE that the WM(i,j) can be calculated only after V(i,j) and array VBI and VM should be calculated before V array for point (i,j). So, the order of computation has been kept as VBI, VM, V, WM for any point (i,j)
- * Also Note that, a valid base pair has j > i. Therefore, the portion of the 2D arrays containing j < i is not useful.
- * Minimum size of a hairpin loop is assumed as 3. This assumption is taken into effect at many places.
- * I am not sure of what these eparam values are at various places except for multiloops.
- * */
-
-/* Modified by Sainath Mallidi August 2009 -  "*/
-/* Added constraint support that can force a base pair, prohibit a base pair and make single stranded regions */
-
 #include <stdio.h>
 #include <math.h>
 #include <stdlib.h>

@@ -2,7 +2,6 @@
 #include <errno.h>
 #include <iostream>
 #include <iomanip>
-#include <fstream>
 #include <string>
 #include <math.h>
 #include <time.h>
@@ -15,7 +14,7 @@
 #include "loader.cpp"
 #include "algorithms.c"
 #include "main.h"
-#include "main-c.h"
+//#include "main-c.h"
 
 using namespace std;
 
@@ -60,18 +59,6 @@ int indx [LENGTH];
 #endif
 
 
-
-
-
-/* Function for displaying help */
-void help() {
-	fprintf(
-			stderr,
-			"Usage: gtfold [-ilsa] [-noisolate] [-params setofparameters] [-constraints filename] [-limitCD dist] [-datadir datadirloc] [-basepairprobabilities] filename(sequence)\n\n-ilsa\t\t= Use the Internal Loop Speedup Algorithm for faster calculation\n-noisolate\t= Prevent isolated base pairs from forming\n-params\t\t= Choose thermodynamic parameters to use: Turner99 or Turner04 or Andronescu\n-constraints\t= Force or prohibit particular pairings\n\tConstraint syntax:\n\t\tF i j k  to force (i,j)(i+1,j-1),.......,(i+k-1,j-k+1) to pair\n\t\tP i j k  to prohibit (i,j)(i+1,j-1),.......,(i+k-1,j-k+1) from pairing\n\t\tP i 0 k  to make bases from i to i+k-1 single stranded bases.\n-limitCD\t= Limit the 'contact distance' for a base pair to the given distance\n-basepairprobabilities\n\t\t= Calculate and output base pair probabilities of the predicted structure\n\nSequence file has to be in one of the two formats: Single line or FASTA\n\n");
-	//	[-forceNC] 	-forceNC = an option to force pairing of noncanonical bases \nSyntax for forcing noncanonical bases (example):\n\t\tA-A,A-G,U-U\n\n");
-	exit(-1);
-}
-
 /* Function for calculating time */
 double get_seconds() {
 	struct timeval tv;
@@ -79,7 +66,7 @@ double get_seconds() {
 	return (double) tv.tv_sec + (double) tv.tv_usec / 1000000.0;
 }
 
-/*Function for printing the sequence*/
+/*Funcion para imprimir la secuencia*/
 void printSequence(int len) {
 	int i = 1;
 	for (i = 1; i <= len; i++) {
@@ -97,37 +84,7 @@ void printSequence(int len) {
 	printf("\n");
 }
 
-/*Function for printing the input constraints*/
-void printConstraints(int len) {
-	int i = 1;
-	for (i = 1; i <= len; i++) {
-		if (constraints[i] > 0 && constraints[i] > i)
-			printf("(");
-		else if (constraints[i] > 0 && constraints[i] < i)
-			printf(")");
-		else if (constraints[i] < 0)
-			printf("x");
-		else
-			printf(".");
-	}
-	printf("\n");
-}
-
-/*Function for printing the predicted structure*/
-void printStructure(int len) {
-	int i = 1;
-	for (i = 1; i <= len; i++) {
-		if (structure[i] > 0 && structure[i] > i)
-			printf("(");
-		else if (structure[i] > 0 && structure[i] < i)
-			printf(")");
-		else
-			printf(".");
-	}
-	printf("\n");
-}
-
-/* Initialize global variables. */
+/* Inicializacion de variables globales. */
 void init_variables(int len) {
 
 	int i;
@@ -245,49 +202,6 @@ void free_variables() {
 	return;
 
 }
-/*
-void init_partition_function_variables(int bases) {
-    QB = mallocTwoD(bases+1, bases+1);
-    if(QB == NULL) {
-        fprintf(stderr,"Failed to allocate QB\n");
-        exit(-1);
-    }
-
-    Q = mallocTwoD(bases+1, bases+1);
-    if(Q == NULL) {
-        fprintf(stderr,"Failed to allocate Q\n");
-        exit(-1);
-    }
-
-    QM = mallocTwoD(bases+1, bases+1);
-    if(QM == NULL) {
-        fprintf(stderr,"Failed to allocate QM\n");
-        exit(-1);
-    }
-
-    P = mallocTwoD(bases+1, bases+1);
-    if(P == NULL) {
-        fprintf(stderr,"Failed to allocate P\n");
-        exit(-1);
-    }
-}
-
-void free_partition_function_variables(int bases) {
-    freeTwoD(QB, bases+1, bases+1);
-    freeTwoD(Q, bases+1, bases+1);
-    freeTwoD(QM, bases+1, bases+1);
-    freeTwoD(P, bases+1, bases+1);
-}
-
-*/
-/* main function - This calls
- *  1) Read command line arguments.
- *  2) populate() from loader.cc to read the thermodynamic parameters defined in the files given in data directory.
- *  3) Initialize variables
- *  4) Calls calculate function defined in algorithms.c for filling up energy tables.
- *  5) Calls trace function defined in trace.c file for tracing the optimal secondary structure
- *  6) Then it generates .ct file from the 1D array structure.
- *  */
 int main(int argc, char** argv) {
 	int i;
 	ifstream cf;
@@ -298,51 +212,47 @@ int main(int argc, char** argv) {
 	ILSA = FALSE;
 	NOISOLATE = FALSE;
 	BPP = FALSE;
-
-	fprintf(stdout,
-			"GTfold: A Scalable Multicore Code for RNA Secondary Structure Prediction\n");
-	fprintf(
-			stdout,
-			"(c) 2007-2010  D.A. Bader, S. Mallidi, A. Mathuriya, C.E. Heitsch, S.C. Harvey\n");
-	fprintf(stdout, "Georgia Institute of Technology\n\n");
-
 	/* Reading command line arguments */
-	if (argc < 2)
-		help();
+	//if (argc < 2)
+		//help();
 
 	int fileIndex = 0, consIndex = 0, dataIndex = 0, paramsIndex=0, lcdIndex = 0; // fNCIndex = 0;
 	i = 1;
 	while (i < argc) {
 		if (argv[i][0] == '-') {
-			if (strcmp(argv[i], "-ilsa") == 0) {
+			if (strcmp(argv[i], "-ilsa") == 0)
+			{
 				ILSA = TRUE;
-			} else if (strcmp(argv[i], "-noisolate") == 0) {
+			} else if (strcmp(argv[i], "-noisolate") == 0) 
+			{
 				NOISOLATE = TRUE;
-			} else if (strcmp(argv[i], "-help") == 0) {
-				help();
-			} else if (strcmp(argv[i], "-constraints") == 0) {
+			} else if (strcmp(argv[i], "-help") == 0) 
+			//{
+			//	help();
+			//} else if (strcmp(argv[i], "-constraints") == 0) 
+			{
 				if (i < argc)
 					consIndex = ++i;
-				else
-					help();
+			//	else
+				//	help();
 			} else if (strcmp(argv[i], "-params")==0) { 
 				PARAMS = TRUE;			  
 				if (i < argc)
 					paramsIndex = ++i;
-				else
-					help();
+				//else
+					//help();
 			} else if (strcmp(argv[i], "-datadir") == 0) {
 				USERDATA = TRUE;
 				if (i < argc)
 					dataIndex = ++i;
-				else
-					help();
+				//else
+					//help();
 			} else if (strcmp(argv[i], "-limitCD") == 0)
 			{
 				if (i < argc)
 					lcdIndex = ++i;
-				else
-					help();	
+				//else
+					//help();	
 			}  else if (strcmp(argv[i], "-basepairprobabilities") == 0)
 			{
 				BPP = TRUE;
@@ -360,22 +270,7 @@ int main(int argc, char** argv) {
 		}
 		i++;
 	}
-
-	if (fileIndex == 0)
-		help();
-	if (ILSA == TRUE)
-		printf("Running with Internal Loop Speedup Algorithm\n");
-	if (NOISOLATE == TRUE)
-		printf("Not allowing isolated base pairs\n");
-	else
-		printf("Allowing isolated base pairs\n");
-	if (consIndex != 0)
-		printf("Constraint file index: %d\n", consIndex);
-	if (BPP == TRUE)
-		printf("Calculating base pair probabilities\n");
-
-	printf("Opening file: %s\n", argv[fileIndex]);
-	cf.open(argv[fileIndex], ios::in);
+	cf.open(argv[fileIndex]);
 	if (cf != NULL)
 		printf("Archivo abierto.\n\n");
 	else {
@@ -441,16 +336,7 @@ int main(int argc, char** argv) {
 	else
 		populate("Turner99",false); /* Defined in loader.cc file to read in the thermodynamic parameter values from the tables in the ../data directory. */
 
-	initTables(bases); /* Initialize global variables */
-	
-	/*
-	if (fNCIndex != 0)
-	{
-		// Force non canonical base pairing
-		//force_noncanonical_basepair(argv[fNCIndex], bases);
-	}
-	*/
-
+	initTables(bases); /* Se inicializan variables globales */
 	int lCD = -1;
 	if (lcdIndex != 0)
 	{
@@ -467,30 +353,10 @@ int main(int argc, char** argv) {
 		energy = calculate(bases, fbp, pbp, numfConstraints, numpConstraints); /* Runs the Dynamic programming algorithm to calculate the optimal energy. Defined in algorithms.c file.*/
     //energy = 0;
 	t1 = get_seconds() - t1;
-
-	fprintf(stdout," Done.\n");
-
-    // only fill the partition function structures if they are needed for BPP
-    if(BPP) {
-        printf("Filling Partition Function structure. . . \n");
-        fflush(stdout);
-
-        // malloc the arrays
-  //      init_partition_function_variables(bases);
-
-        // fill the arrays
-    //    fill_partition_fn_arrays(bases, QB, Q, QM);
-
-        fprintf(stdout," Done.\n");
-
-        fprintf(stdout,"Q[1][n]: %f\n\n", Q[1][bases]);
-    }
-	fprintf(stdout,"Minimum Free Energy = %12.2f\n\n", energy/100.00);
-	fprintf(stdout,"MFE running time (in seconds): %9.6f\n\n", t1);
-
+	printf("Energia minima libre = %12.2f\n", energy/100.00);
+	printf("El calculo demoró (segundos): %9.6f\n\n", t1);
 	t1 = get_seconds();
 	t1 = get_seconds() - t1;
-
 	stringstream ss1, ss2;
 	char suboptfile[1024];
 	ss1 << bases;
@@ -526,22 +392,11 @@ int main(int argc, char** argv) {
 
 	outfile.close();
 
-	fprintf(stdout,"\n\n");
-	fprintf(stdout,"Traceback running time (in seconds): %9.6f\n", t1);
+	printf("\n\n");
+	printf("Traceback running time (in seconds): %9.6f\n", t1);
 
-	fprintf(stdout, "\n\nFolding complete\n\n");
+	printf("\n\nFolding complete\n\n");
 	printSequence(bases);
-	printConstraints(bases);
-	printStructure(bases);
-/*
-    if(BPP) {
-  	      fillBasePairProbabilities(bases, structure, Q, QB, QM, P);
-
-        printBasePairProbabilities(bases, structure, P);
-
-        free_partition_function_variables(bases);
-    }
-*/
 	free_variables();
 
 	return 0;

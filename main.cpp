@@ -11,7 +11,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
+// Algoritmos asociados
 #include "loader.cpp"
 #include "algorithms.c"
 #include "main.h"
@@ -25,38 +25,19 @@ enum BOOL NOISOLATE;
 enum BOOL USERDATA;
 enum BOOL PARAMS;
 enum BOOL LIMIT_DISTANCE;
-#ifdef DYNALLOC
 int LENGTH;
 unsigned char *RNA1; 
-unsigned char *RNA; /* Contains RNA string in terms of 0, 1, 2, 3 for A, C, G and U respectively*/
-int *structure; /* An array to contain the optimal structure */
-int *V; /* int V[LENGTH][LENGTH]; */
-int *W;
-int **VBI; /* VBI(i,j) will contain the energy of optimal internal loop closed with (i,j) base pair */
-int **VM; /* VM(i, j) will contain the energy of optimla multiloop closed with (i,j) base pair */
-int **WM; /* This array is introduced to help multiloop calculations. WM(i,j) contains the optimal energy of string segment from si to sj if this forms part of a multiloop */
-int *indx; /* This array is used to index V array. Here V array is mapped from 2D to 1D and indx array is used to get the mapping back.*/
-int *constraints;
-
-double **QB;  // QB[i][j] is the sum over all possible loops closed by (i,j),
-              // including the summed contributions of their subloops
-double **Q;   // Q[i][j] in addition to the above quantity QB[i][j], Q[i][j]
-              // also includes all configurations with (i,j) not paired
-double **QM;  // QM[i][j] is the sum of configuration energies from i to j,
-              // assuming that i,j are contained in a multiloop
-double **P;   // P[i][j] The probability that nucleotides i and j form a basepair
-#else
-/* This are previously used variables, now they are not used. */
-unsigned char RNA[LENGTH];
-unsigned char RNA1[LENGTH];
-int structure[LENGTH];
-int VBI[LENGTH][LENGTH];
-int VM[LENGTH][LENGTH];
-int V[(LENGTH-1)*(LENGTH)/2 + 1]; // int V[LENGTH][LENGTH];
-int WM[LENGTH][LENGTH];
-int W[LENGTH];
-int indx [LENGTH];
-#endif
+unsigned char *RNA; // Contiene cadena de ARN en términos de 0, 1, 2, 3 para A, C, G y U respectivamente
+int *V; // Para el calculo de MFE
+int *W; // Para el calculo de MFE
+int *constraints; // Ayuda al calculo de MFE
+int **VBI; // VBI(i,j) contendrá la energía del bucle interno óptimo cerrado con el par de bases (i,j)
+int **VM; // VM(i, j) contendrá la energía optima del multiloop cerrado con el par de bases (i,j)
+int **WM; // Esta matriz se presenta para ayudar a los cálculos de multiloop. WM (i, j) contiene la energía óptima del segmento de cuerda de si a sj si esto forma parte de un multiloop
+int *indx; // Esta matriz se utiliza para indexar V array. Aquí V matriz se asigna de 2D a 1D y indx matriz se utiliza para obtener la asignación de nuevo.
+double **QB;  // QB [i] [j] es la suma de todos los bucles posibles cerrados por (i, j), incluyendo las contribuciones sumadas de sus subloops
+double **Q;   // Q [i] [j] además de la cantidad QB [i] [j], Q [i] [j] incluye también todas las configuraciones con (i, j) no pareadas
+double **QM;  // QM [i] [j] es la suma de las energías de configuración de i a j, suponiendo que i, j están contenidos en un multiloop
 
 // Funcion para calcular el tiempo
 double segundos() {
@@ -72,7 +53,7 @@ void init_variables(int len) {
 	LENGTH = len + 1;
 	RNA = (unsigned char *) malloc(LENGTH * sizeof(unsigned char));
 	RNA1 = (unsigned char *) malloc(LENGTH * sizeof(unsigned char));
-	structure = (int *) malloc(LENGTH * sizeof(int));
+	//structure = (int *) malloc(LENGTH * sizeof(int));
 	V = (int *) malloc(((LENGTH - 1) * (LENGTH) / 2 + 1) * sizeof(int));
 	W = (int *) malloc(LENGTH * sizeof(int));
 	VBI = (int **) malloc(LENGTH * sizeof(int *));
@@ -192,7 +173,7 @@ int main(int argc, char** argv) {
 	return 0;
 }
 
-GTFOLD_FLAGS handle_IUPAC_code(const string& s, const int bases)
+BANDERA handle_IUPAC_code(const string& s, const int bases)
 {
 	int* stack_unidentified_base;
 	int stack_count=0;

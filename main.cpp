@@ -2,7 +2,6 @@
 #include <errno.h>
 #include <iostream>
 #include <iomanip>
-#include <fstream>
 #include <string>
 #include <math.h>
 #include <time.h>
@@ -11,11 +10,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-// Algoritmos asociados
+// Algoritmos asociados para el calculo
 #include "loader.cpp"
 #include "algorithms.c"
 #include "main.h"
-
+// Para la generación de secuencias random
+static int sre_randseed = 42;
+#define CHOOSE(a)   ((int) (sre_random() * (a)))
+//
 using namespace std;
 
 /* Variables globales */

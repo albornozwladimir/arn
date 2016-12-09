@@ -75,6 +75,123 @@ void init_variables(int len) {
 #endif
 	return;
 }
+
+/* deallocate global variables */
+void free_variables() {
+	int i;
+
+#ifdef DYNALLOC
+	free(indx);
+	for (i = 0; i < LENGTH; i++)
+		free(WM[i]);
+	free(WM);
+	for (i = 0; i < LENGTH; i++)
+		free(VM[i]);
+	free(VM);
+	for (i = 0; i < LENGTH; i++)
+		free(VBI[i]);
+	free(VBI);
+	free(W);
+	free(V);
+	free(constraints);
+	free(RNA);
+	free(RNA1);
+
+#endif
+
+	return;
+
+}
+
+double
+sre_random(void)
+{
+  static long  rnd1;    /* random number from LCG1 */
+  static long  rnd2;            /* random number from LCG2 */
+  static long  rnd;             /* random number we return */
+  static long  tbl[64];   /* table for Bays/Durham shuffle */
+  long x,y;
+  int i;
+
+  /* Magic numbers a1,m1, a2,m2 from L'Ecuyer, for 2 LCGs.
+   * q,r derive from them (q=m/a, r=m%a) and are needed for Schrage's algorithm.
+   */
+  long a1 = 40014;    
+  long m1 = 2147483563;   
+  long q1 = 53668;
+  long r1 = 12211;
+
+  long a2 = 40692;
+  long m2 = 2147483399;
+  long q2 = 52774;
+  long r2 = 3791;
+
+  if (sre_randseed > 0) 
+    {
+      rnd1 = sre_randseed;
+      rnd2 = sre_randseed;
+        /* Fill the table for Bays/Durham */
+      for (i = 0; i < 64; i++) {
+  x    = a1*(rnd1%q1);   /* LCG1 in action... */
+  y    = r1*(rnd1/q1);
+  rnd1 = x-y;
+  if (rnd1 < 0) rnd1 += m1;
+
+  x    = a2*(rnd2%q2);   /* LCG2 in action... */
+  y    = r2*(rnd2/q2);
+  rnd2 = x-y;
+  if (rnd2 < 0) rnd2 += m2;
+
+  tbl[i] = rnd1-rnd2;
+  if (tbl[i] < 0) tbl[i] += m1;
+      }
+      sre_randseed = 0;   /* drop the flag. */
+    }/* end of initialization*/
+
+
+  x    = a1*(rnd1%q1);   /* LCG1 in action... */
+  y    = r1*(rnd1/q1);
+  rnd1 = x-y;
+  if (rnd1 < 0) rnd1 += m1;
+
+  x    = a2*(rnd2%q2);   /* LCG2 in action... */
+  y    = r2*(rnd2/q2);
+  rnd2 = x-y;
+  if (rnd2 < 0) rnd2 += m2;
+
+        /* Choose our random number from the table... */
+  i   = (int) (((double) rnd / (double) m1) * 64.);
+  rnd = tbl[i];
+      /* and replace with a new number by L'Ecuyer. */
+  tbl[i] = rnd1-rnd2;
+  if (tbl[i] < 0) tbl[i] += m1;
+
+  return ((double) rnd / (double) m1);  
+}
+
+int StrShuffle(string &s1, string s2)
+{
+  int  len;
+  int  pos;
+  int i=0;
+  char c;
+  
+  if (s1 != s2) s1=s2;
+  for (len = s1.length(); len > 1; len--)
+    {				
+      pos       = CHOOSE(len);
+      c         = s1[pos];
+      s1[pos]   = s1[len-1];
+      s1[len-1] = c;
+
+    }
+    for(i; i <= s2.length(); i++){
+        printf("%c", s1[i]);
+      }
+    printf("\n");
+  return 1;
+}
+
 /* Funcion principal
  *  1) Leer los argumentos de la línea de comandos.
  *  2) populate() de loader.cpp para leer los parámetros termodinámicos definidos 
@@ -86,9 +203,13 @@ int main(int argc, char** argv) {
 	int i;
 	ifstream cf;
 	int bases;
-	string s, seq;
+	string s, seq, s_random;
 	int energy;
 	float energia;
+	double energy_random_prom;
+	double energy_random_desv[50];
+	double desv=0;
+	double Z;
 	double t1;
 	ILSA = FALSE;
 	NOISOLATE = FALSE;
@@ -154,10 +275,23 @@ int main(int argc, char** argv) {
 	cout << "Largo de la secuencia: " << bases <<endl; // Se imprime el largo de la secuencia
 	cf.close();
 	int **fbp = NULL, **pbp = NULL;
+	int numfConstraints = 0, numpConstraints = 0;
+	if (consIndex != 0)
+	{
+		GTFOLD_FLAGS r = initialize_constraints(&fbp, &pbp, numpConstraints, numfConstraints, argv[consIndex]);
+		if (r == ERR_OPEN_FILE)
+		{
+			free_variables();
+			exit(-1);
+		}
+	}
+	
+	
 	if (handle_IUPAC_code(s, bases)  == FAILURE)
 	{
+		free_variables();
 		exit(0);
-	}	
+	}
 	if(USERDATA==TRUE)
 		populate(argv[dataIndex],true);
 	else if (PARAMS == TRUE)
@@ -166,16 +300,137 @@ int main(int argc, char** argv) {
 		populate("combinaciones",false); //Lectura de archivos termodinámicos
 	initTables(bases); // Se inicializan variables globales de acuerdo a las bases de la secuencia
 	t1 = segundos();
-	energy = calculate(bases, fbp, pbp, 0, 0); /* Ejecuta el algoritmo de programación dinámica para calcular
+	energy = calculate(bases, fbp, pbp, numfConstraints, numpConstraints); /* Ejecuta el algoritmo de programación dinámica para calcular
 	 la energía óptima. Definido en el archivo algorithms.c*/
     t1 = segundos() - t1;
     energia = energy/100.00;
 	cout << "\nEnergia minima libre: " << energia <<endl;
+
+	for(int i=0;i<5;i++){
+    	StrShuffle(s,seq);
+    	int bases2 = s.length();
+    	init_variables(bases2);
+    	int **fbp = NULL, **pbp = NULL;
+		int numfConstraints = 0, numpConstraints = 0;		
+		if (handle_IUPAC_code(s, bases2)  == FAILURE)
+		{
+			free_variables();
+			exit(0);
+		}		
+		if(USERDATA==TRUE)
+			populate(argv[dataIndex],true);
+		else if (PARAMS == TRUE)
+			populate(argv[paramsIndex],false);
+		else
+			populate("Turner99",false); /* Defined in loader.cc file to read in the thermodynamic parameter values from the tables in the ../data directory. */
+    	initTables(bases2);
+    	energy_random_prom = (calculate(bases2, fbp, pbp, numfConstraints, numpConstraints) + energy_random_prom);
+    	printf("Valores-prom = %f\n", (calculate(bases2, fbp, pbp, numfConstraints, numpConstraints))/100.00);
+    	energy_random_desv[i] =calculate(bases2, fbp, pbp, numfConstraints, numpConstraints)/100.00;
+    
+  	}
+  	energy_random_prom = energy_random_prom/(5*100);
+  	for(i=0;i<5;i++){
+  		desv= (energy_random_desv[i] - energy_random_prom)*(energy_random_desv[i] - energy_random_prom)+desv;
+  	}
+  	printf("Valor-prom = %f\n", energy_random_prom);
+  	desv = sqrt(desv/4);
+  	printf("Valor-desv = %f\n", desv);
+  	Z = (energia - (energy_random_prom))/desv;
+  	printf("Valor-Z = %f\n", Z);
 	cout << "\nEl calculo demoró "<< t1 << " segundos" <<endl;
 	return 0;
 }
 
-BANDERA handle_IUPAC_code(const string& s, const int bases)
+GTFOLD_FLAGS initialize_constraints(int*** fbp, int ***pbp, int& numpConstraints, int& numfConstraints, const char* constr_file)
+{
+	ifstream cfcons;
+
+	fprintf(stdout, "Running with constraints\n");
+	//fprintf(stdout, "Opening constraint file: %s\n", argv[consIndex]);
+	fprintf(stdout, "Opening constraint file: %s\n", constr_file);
+
+	cfcons.open(constr_file, ios::in);
+	if (cfcons != NULL)
+		fprintf(stdout, "Constraint file opened.\n");
+	else {
+		fprintf(stderr, "Error opening constraint file\n\n");
+		cfcons.close();
+		return ERR_OPEN_FILE; //exit(-1);
+	}
+
+	char cons[100];
+
+	while (!cfcons.eof()) {
+		cfcons.getline(cons, 100);
+		if (cons[0] == 'F' || cons[0] == 'f')
+			numfConstraints++;
+		if (cons[0] == 'P' || cons[0] == 'p')
+			numpConstraints++;
+	}
+	cfcons.close();
+
+	fprintf(stdout, "Number of Constraints given: %d\n\n", numfConstraints
+			+ numpConstraints);
+	if (numfConstraints + numpConstraints != 0)
+		fprintf(stdout, "Reading Constraints.\n");
+	else {
+		fprintf(stderr, "No Constraints found.\n\n");
+		return NO_CONS_FOUND;
+	}
+
+	*fbp = (int**) malloc(numfConstraints * sizeof(int*));
+	*pbp = (int**) malloc(numpConstraints * sizeof(int*));
+
+	int fit = 0, pit = 0, it = 0;
+
+	for (it = 0; it < numfConstraints; it++) {
+		(*fbp)[it] = (int*) malloc(2* sizeof (int));
+	}
+	for(it=0; it<numpConstraints; it++) {
+		(*pbp)[it] = (int*)malloc(2*sizeof(int));
+	}
+	cfcons.open(constr_file, ios::in);
+
+	while(!cfcons.eof()) {
+		cfcons.getline(cons,100);
+		char *p=strtok(cons, " ");
+		p = strtok(NULL, " ");
+		if(cons[0]=='F' || cons[0]=='f') {
+			int fit1=0;
+			while(p!=NULL) {
+				(*fbp)[fit][fit1++] = atoi(p);
+				p = strtok(NULL, " ");
+			}
+			fit++;
+		}
+		if( cons[0]=='P' || cons[0]=='p') {
+			int pit1=0;
+			while(p!=NULL) {
+				(*pbp)[pit][pit1++] = atoi(p);
+				p = strtok(NULL, " ");
+			}
+			pit++;
+		}
+	}
+
+	fprintf(stdout, "Forced base pairs: ");
+	for(it=0; it<numfConstraints; it++) {
+		for(int k=1;k<= (*fbp)[it][2];k++)
+			fprintf(stdout, "(%d,%d) ", (*fbp)[it][0]+k-1, (*fbp)[it][1]-k+1);
+	}
+	fprintf(stdout, "\nProhibited base pairs: ");
+	for(it=0; it<numpConstraints; it++) {
+		for(int k=1;k<= (*pbp)[it][2];k++)
+			fprintf(stdout, "(%d,%d) ", (*pbp)[it][0]+k-1, (*pbp)[it][1]-k+1);
+	}
+	fprintf(stdout, "\n\n");
+	
+	return SUCCESS;
+}
+
+
+GTFOLD_FLAGS handle_IUPAC_code(const string& s, const int bases)
 {
 	int* stack_unidentified_base;
 	int stack_count=0;

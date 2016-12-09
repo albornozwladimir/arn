@@ -72,7 +72,7 @@ void populate(const char *userdatadir,bool userdatalogic) {
 		EN_DATADIR += "/";
 	}
 	initMiscloopValues("miscloop.dat"); // Bucles variados.
-	InicioValoresPila("stack.dat"); // Energías libres para el apilamiento de pares de bases.
+	initStackValues("stack.dat"); // Energías libres para el apilamiento de pares de bases.
 	initDangleValues("dangle.dat"); // Una sola base que apila energías libres.
 	initLoopValues("loop.dat"); // Componente entropico para los bucles internos, del bulto y de horquilla.
 	initTstkhValues("tstackh.dat"); // Free energies for terminal mismatch stacking in hairpin loops
@@ -144,7 +144,7 @@ unsigned char getBase1(std::string base) {
 	return 'X';
 }
 
-int InicioValoresPila(string fileName) {
+int initStackValues(string fileName) {
 
 	ifstream cf; // Manejo de archivos
 	int i, j, k, l; // Variables de apoyo

@@ -12,7 +12,7 @@
 void populate(const char *userdatadir,bool userdatalogic);
 unsigned char getBase(std::string base);
 unsigned char getBase1(std::string base);
-int initStackValues(std::string fileName);
+int InicioValoresPila(std::string fileName);
 int initMiscloopValues(std::string fileName);
 int initDangleValues(std::string fileName);
 int initLoopValues(std::string fileName);

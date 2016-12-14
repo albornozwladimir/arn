@@ -5,12 +5,8 @@
 #include "constants.h"
 #include "main-c.h"
 #include "algorithms.h"
-#ifdef _OPENMP   /* Para poder paralelizar el calculo*/
-#include "omp.h"
-#endif
-
+#include <omp.h> // Permite trabajar con computacion paralela
 #define DEBUG 0
-
 #define WM(i,j) WM[j][i]  /* Se definen los tipos que contendrán los calculos.*/
 
 unsigned int chPairKey;
@@ -95,15 +91,12 @@ void initTables(int len) {
 
 	for (i = 0; i < LLL; i++)
 		V[i] = INFINITY_;
-
-	/*The array V is mapped from 2D to 1D and indexed using the indx array. This mapping helps removing the space wasted for j < i*/
 	for (i = 0; i <= LENGTH - 1; i++)
 		indx[i] = (len) * (i - 1) - (i * (i - 1)) / 2;
 
 	return;
 }
 
-//check if single stranded region is allowed with the given constraints
 int checkSS(int i, int j) {
 
 	int it;
@@ -115,6 +108,7 @@ int checkSS(int i, int j) {
 
 }
 
+//Funcion principal que permite ejecutar los calculos de energia y ZScore
 int calculate(int len, int **forceList, int **prohibitList, int forcelen, int prohibitlen) {
 	int b, i, j, it, k;
 	for(i=1;i<=len;i++) 
@@ -124,65 +118,42 @@ int calculate(int len, int **forceList, int **prohibitList, int forcelen, int pr
 	}	
 	if (prohibitlen != 0) 
 	{
-		for (it = 0; it < prohibitlen; it++) 
-		{
-			for(k= 1; k <= prohibitList[it][2];k++)
+		#pragma omp parallel for schedule(auto)
+			for (it = 0; it < prohibitlen; it++) 
 			{
-				constraints[prohibitList[it][0]+k-1] = -1;
-				if(prohibitList[it][1]!=0)
+				for(k= 1; k <= prohibitList[it][2];k++)
 				{
-					constraints[prohibitList[it][1]+1-k] = -1;
+					constraints[prohibitList[it][0]+k-1] = -1;
+					if(prohibitList[it][1]!=0)
+					{
+						constraints[prohibitList[it][1]+1-k] = -1;
+					}
 				}
 			}
-		}
 	}
 	if (forcelen != 0) 
 	{
-		printf("Running with constraints\n");
-		for (it = 0; it < forcelen; it++) 
-		{
-			for(k=1; k <= forceList[it][2];k++)
+		#pragma omp parallel for schedule(auto)
+			for (it = 0; it < forcelen; it++) 
 			{
-				if (!chPair(RNA[forceList[it][0]+k-1], RNA[forceList[it][1]-k+1])) 
+				for(k=1; k <= forceList[it][2];k++)
 				{
-					printf("Can't constrain (%d,%d)\n", forceList[it][0]+k-1,
-							forceList[it][1]-k+1);
-					continue;
+					if (!chPair(RNA[forceList[it][0]+k-1], RNA[forceList[it][1]-k+1])) 
+					{
+						continue;
+					}
+					constraints[forceList[it][0]+k-1] = forceList[it][1]+1-k;
+					constraints[forceList[it][1]+1-k] = forceList[it][0]+k-1;
 				}
-				constraints[forceList[it][0]+k-1] = forceList[it][1]+1-k;
-				constraints[forceList[it][1]+1-k] = forceList[it][0]+k-1;
 			}
-				//printf("(%d,%d)\n", forceList[it][0], forceList[it][1]);
-		}
 	}
-
-#if 1
-#ifdef _OPENMP
-#pragma omp parallel
-#pragma omp master
-	{
-		fprintf(stdout,"\n\n");
-		fprintf(stdout,"Running with %3d OpenMP thread",omp_get_num_threads());
-		if (omp_get_num_threads()>1) fprintf(stdout,"s");
-		fprintf(stdout,".\n\n");
-	}
-#endif
-#endif
-
-    //printf("starting.......\n");
-
 	/* Here b-1 is the length of the segment closed with (i,j) base pair. We assume the minimum size of a hairpin loop closed with (i,j) equal to 3.*/
 
 	/* For b = 4 to 6, hairpin loops and at b = 6 stack loops are possible. So, only WM, and V array are needs to be calculated.
 	 * If (i,j) can not pair up then only WM needs to be calculated.
 	 * */
 	for (b = 4; b <= 6; b++) {
-#ifdef _OPENMP
-#pragma omp parallel for private (i,j) schedule(guided)
-		/* OpenMP syntex to parallelize the for loop. Guided scheduling strategy works better because there may not be equla amount of work for every (i,j)
-		 * Please look at the conference paper on GTfold for information regarding how to parallelize the code. Also, note that the for every value of b calculation has to go sequentially. However, the calculation for a perticular value of b, which corresponds to calculating on a single diagonal.
-		 * */
-#endif
+	#pragma omp parallel for private (i,j) schedule(guided)
 		for (i = 1; i <= len - b; i++) {
 			j = i + b;
 			//if (constraints[i] == -1 && constraints[j] == -1)
@@ -200,13 +171,9 @@ int calculate(int len, int **forceList, int **prohibitList, int forcelen, int pr
 	if (ILSA == FALSE) { /* If we are executing internal loop speedup algorithm (ILSA) */
 		/* For b=7 to 10, base pair (i,j) is not able to form multiloops. */
 		for (b = 7; b <= 10; b++) {
-#ifdef _OPENMP
-#pragma omp parallel for private (i,j) schedule(guided)
-#endif
+		#pragma omp parallel for private (i,j) schedule(guided)
 			for (i = 1; i <= len - b; i++) {
 				j = i + b;
-				//if (constraints[i] == -1 && constraints[j] == -1)
-				//	continue;
 				if (chPair(RNA[i], RNA[j])) {
 					calcVBI(i, j); /* Calculates VBI element at (i,j) */
 					calcVWM(i, j, VBI[i][j], INFINITY_); /* Calculates V and WM arrays*/
@@ -216,14 +183,9 @@ int calculate(int len, int **forceList, int **prohibitList, int forcelen, int pr
 		}
 
 		for (b = 11; b <= len - 1; b++) {
-#ifdef _OPENMP
-#pragma omp parallel for private (i,j) schedule(guided)
-#endif
+		#pragma omp parallel for private (i,j) schedule(guided)			
 			for (i = 1; i <= len - b; i++) {
 				j = i + b;
-                //printf("%d %d: %d %d\n", i, j, constraints[i], constraints[j]);
-				//if (constraints[i] == -1 && constraints[j] == -1)
-				//	continue;
 				if (chPair(RNA[i], RNA[j])) {
 					calcVBIVMVWM(i, j); /* Calculates VBI, VM, V and WM elements at (i,j) */
 				} else
@@ -232,9 +194,6 @@ int calculate(int len, int **forceList, int **prohibitList, int forcelen, int pr
 		}
 	} else { /* If we are executing with ILSA - Internal loop speedup algorithm */
 		for (b = 7; b <= 10; b++) {
-#ifdef _OPENMP
-#pragma omp parallel for private (i,j) schedule(guided)
-#endif
 			for (i = 1; i <= len - b; i++) {
 				j = i + b;
 				calcVBIS(i, j); /* Calculates VBI[i][j] array with Internal loop speedup algorithm (ILSA) */
@@ -249,9 +208,6 @@ int calculate(int len, int **forceList, int **prohibitList, int forcelen, int pr
 		}
 
 		for (b = 11; b <= len - 1; b++) {
-#ifdef _OPENMP
-#pragma omp parallel for private (i,j) schedule(guided)
-#endif
 			for (i = 1; i <= len - b; i++) {
 				j = i + b;
 				calcVBIS(i, j); /* Calculation of VBI array at (i,j) - Done in both cases whether (i,j) pairs up or not*/
@@ -263,23 +219,12 @@ int calculate(int len, int **forceList, int **prohibitList, int forcelen, int pr
 					calcWM(i, j); /* Calculation of WM at (i,j)*/
 			}
 		}
-	}
-
-/*
-    for(j=2; j<=len; j++){
-        for (i=j-1; i>0; i--){
-		    printf("%d, (%d,%d), WM: %d\n", j-i, i, j, WM[i][j]);
-        }
-    }
-*/            
-
-	for (j = 5; j <= len; j++) /* Recurssion relation for W array does not depend upon any other array, so can be done after the computation of other arrays are finished.*/
-		calcW(j);
-
-	//printV(len);
-
+	}         
+		for (j = 5; j <= len; j++) /* Recurssion relation for W array does not depend upon any other array, so can be done after the computation of other arrays are finished.*/
+			calcW(j);
 	return W[len];
-}
+}   // Fin de la funcion que calcula
+
 /* This function calculates the optimal energy of internal loops closed with base pair (i,j) using a heuristic, which limits their size to a constant value - MAXLOOP
  An internal loop contains one closing base pair (i,j) and one enclosed base pair (ip,jp). This function searches for the best enclosed base pair for the closing base pair (i,j) within the given window limited by MAXLOOP
  */
@@ -957,34 +902,22 @@ void calcVBIVMVWM(int i, int j) {
 		WMhjm2 = WM(h,j-2);
 		WMhp1j = WM(h+1,j);
 #endif
-
 		/* WM starts */
 		a1 += WMhp1j;
 		if (a1 <= WMijp)
 			WMijp = a1;
-		/* WM ends */
-
-		/* Calculation of the four options for VM*/
 		A_temp = WMip1hm1 + WMhjm1;
 		if ((A_temp <= VMij))
 			VMij = A_temp;
-
 		A_temp = WMip2hm1 + WMhjm1;
 		if (A_temp <= VMidj && constraints[i + 1] <= 0)
 			VMidj = A_temp;
-
 		A_temp = WMip1hm1 + WMhjm2;
 		if (A_temp <= VMijd && constraints[j - 1] <= 0)
 			VMijd = A_temp;
-
 		A_temp = WMip2hm1 + WMhjm2;
-		if (A_temp <= VMidjd && constraints[i + 1] <= 0 && constraints[j - 1]
-		                                                               <= 0)
+		if (A_temp <= VMidjd && constraints[i + 1] <= 0 && constraints[j - 1] <= 0)
 			VMidjd = A_temp;
-
-		// if(i==28 && j==42)
-		// 	printf("(%d,%d,%d), VMij: %d, VMidj: %d, VMijd: %d, VMidjd: %d\n", i,h,j, VMij, VMijd, VMidj, VMidjd);
-
 	}
 
 #if 0
@@ -1015,9 +948,6 @@ void calcVBIVMVWM(int i, int j) {
 		VMij = INFINITY_;
 
 	VM[i][j] = VMij;
-	/* VM ends */
-
-	/* V starts */
 	es = eS(i, j); /* Energy of stack closed with (i,j) and (i+1,j-1)*/
 	if (es == 0) { /* Amrita: I don't know, if this statement is necessary. NOT DONE BY ME. */
 		es = INFINITY_;
@@ -1031,17 +961,10 @@ void calcVBIVMVWM(int i, int j) {
 			&& constraints[j] != i) || constraints[i] == -1 || constraints[j]
 			                                                               == -1)
 		Vij = INFINITY_;
-
-	//printf("%d, V(%d,%d): eh: %d, es: %d, vbi: %d, vm: %d, v: %d\n", j-i, i, j, eH(i,j), es, VBI[i][j], VMij, Vij);
-
 	V[indx[i] + j] = Vij;
 
 	if (NOISOLATE == TRUE && Vij < INFINITY_) {
-		//Check if i+1,j-1 have paired
 		if (V[indx[i + 1] + j - 1] > INFINITY_ - SMALLINFTY_) {
-			//If not then check for i-1, j+1
-
-			//Isolated base pairs look ahead
 			int eHL = eH(i - 1, j + 1);
 			int eSL = eS(i - 1, j + 1) + V[indx[i] + j];
 			if (i - 1 == 0) {

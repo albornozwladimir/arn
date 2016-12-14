@@ -14,6 +14,10 @@
 #include "loader.cpp"
 #include "algorithms.c"
 #include "main.h"
+/*
+#ifdef _OPENMP   // Para poder paralelizar el calculo
+#include "omp.h"
+#endif*/
 // Para la generación de secuencias random
 static int sre_randseed = 42;
 #define CHOOSE(a)   ((int) (sre_random() * (a)))
@@ -162,11 +166,11 @@ int StrShuffle(string &s1, string s2)
       s1[pos]   = s1[len-1];
       s1[len-1] = c;
 
-    }
+    }/*
     for(i; i <= s2.length(); i++){
         printf("%c", s1[i]);
       }
-    printf("\n");
+    printf("\n");*/
   return 1;
 }
 
@@ -180,15 +184,15 @@ int StrShuffle(string &s1, string s2)
  *  4) Las llamadas que calculan la función definida en algoritmos.c para rellenar las tablas de energía.
  *  */
 int main(int argc, char** argv) {
-	int i;
+	int i,i2,i3,i4;
 	ifstream cf;
 	int bases;
 	string s, seq, s_random;
 	int energy;
 	float energia;
-	double energy_random_prom;
+	double energy_random_prom,valor_extraido;
 	double energy_random_desv[50];
-	double desv=0;
+	double desv=0,desv1=0,desv2=0,desv3=0,desv4=0;
 	double Z;
 	double t1;
 	ILSA = FALSE;
@@ -273,35 +277,35 @@ int main(int argc, char** argv) {
     t1 = segundos() - t1; // Calculo de tiempo para la energia de la secuencia completa
     energia = energy/100.00;
 	cout << "\nEnergia minima libre: " << energia <<endl;
-	cout << "La energía para el calculo de la secuencia completa fue: "<<t1<<" segundos"<<endl<<endl;
+	cout << "El calculo demoró: "<<t1<<" segundos"<<endl<<endl;
 	t1 = 0;
 	t1 = segundos();  // Se empieza a calcular el tiempo para el Z-Score
-	for (int i=0; i<5; i++){
-    	StrShuffle(s,seq);
-    	int bases2 = s.length();
-    	init_variables(bases2);
-    	if (handle_IUPAC_code(s, bases2)  == FAILURE) // Para el error
+	for (int i=0; i<1000; i++){
+		StrShuffle(s,seq); // NO demora, no es necesario paralelizar
+		int bases2 = s.length();
+		init_variables(bases2);
+		if (handle_IUPAC_code(s, bases2)  == FAILURE) // Para el error
 		{
 			exit(0);
-		}		
+		}
 		if(USERDATA==TRUE)
 			populate(argv[dataIndex],true);
 		else if (PARAMS == TRUE)
 			populate(argv[paramsIndex],false);
 		else
 			populate("combinaciones",false);			
-    	initTables(bases2);
-    	energy_random_prom = (calculate(bases2, fbp, pbp, numfConstraints, numpConstraints) + energy_random_prom);
-    	printf("Valores-prom = %f\n", (calculate(bases2, fbp, pbp, numfConstraints, numpConstraints))/100.00);
-    	energy_random_desv[i] =calculate(bases2, fbp, pbp, numfConstraints, numpConstraints)/100.00;
+		initTables(bases2);
+		valor_extraido = calculate(bases2, fbp, pbp, numfConstraints, numpConstraints);
+		energy_random_prom = valor_extraido + energy_random_prom; 
+		energy_random_desv[i] = valor_extraido/100.00;
 	}
-	energy_random_prom = energy_random_prom/(5*100);
-  	for (i=0; i<5; i++){
-  		desv= (energy_random_desv[i] - energy_random_prom)*(energy_random_desv[i] - energy_random_prom)+desv;
-  	}
-  	printf("\nValor-prom = %f\n", energy_random_prom);
-  	desv = sqrt(desv/4);
-  	printf("Valor-desv = %f\n", desv);
+	energy_random_prom = energy_random_prom/(1000*100);
+	for (i=0; i<1000; i++){
+		desv= (energy_random_desv[i] - energy_random_prom)*(energy_random_desv[i] - energy_random_prom)+desv; 
+	}
+//  	printf("\nValor-prom = %f\n", energy_random_prom);
+  	desv = sqrt(desv/1000);
+  //	printf("Valor-desv = %f\n", desv);
   	Z = (energia - (energy_random_prom))/desv;
   	printf("Valor-Z = %f\n", Z);
   	t1 = segundos() - t1; // Calculo de tiempo para la energia de la secuencia completa

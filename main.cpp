@@ -191,7 +191,7 @@ int main(int argc, char** argv) {
 	int energy;
 	float energia;
 	double energy_random_prom,valor_extraido;
-	double energy_random_desv[50];
+	double energy_random_desv[1000];
 	double desv=0,desv1=0,desv2=0,desv3=0,desv4=0;
 	double Z;
 	double t1;
@@ -301,7 +301,7 @@ int main(int argc, char** argv) {
 	}
 	energy_random_prom = energy_random_prom/(1000*100);
 	for (i=0; i<1000; i++){
-		desv= (energy_random_desv[i] - energy_random_prom)*(energy_random_desv[i] - energy_random_prom)+desv; 
+		desv = (energy_random_desv[i] - energy_random_prom)*(energy_random_desv[i] - energy_random_prom)+desv; 
 	}
 //  	printf("\nValor-prom = %f\n", energy_random_prom);
   	desv = sqrt(desv/1000);

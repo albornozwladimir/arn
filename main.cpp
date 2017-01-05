@@ -76,16 +76,14 @@ void init_variables(int len) {
 	return;
 }
 
-
-
 // Generacion de las secuencias aleatorias
 
 double sre_random(void)
 {
-  static long  rnd1;    /* random number from LCG1 */
-  static long  rnd2;            /* random number from LCG2 */
-  static long  rnd;             /* random number we return */
-  static long  tbl[64];   /* table for Bays/Durham shuffle */
+  static long  rnd1;    /* Numero random de LCG1 */
+  static long  rnd2;    /* Numero random de LCG2 */
+  static long  rnd;     /* Numero random de return */
+  static long  tbl[64]; /* Tabla para Bays/Durham shuffle */
   long x,y;
   int i;
 
@@ -96,52 +94,47 @@ double sre_random(void)
   long m1 = 2147483563;   
   long q1 = 53668;
   long r1 = 12211;
-
   long a2 = 40692;
   long m2 = 2147483399;
   long q2 = 52774;
   long r2 = 3791;
 
   if (sre_randseed > 0) 
-    {
+  {
       rnd1 = sre_randseed;
       rnd2 = sre_randseed;
-        /* Fill the table for Bays/Durham */
       for (i = 0; i < 64; i++) {
-  x    = a1*(rnd1%q1);   /* LCG1 in action... */
-  y    = r1*(rnd1/q1);
-  rnd1 = x-y;
-  if (rnd1 < 0) rnd1 += m1;
-
-  x    = a2*(rnd2%q2);   /* LCG2 in action... */
-  y    = r2*(rnd2/q2);
-  rnd2 = x-y;
-  if (rnd2 < 0) rnd2 += m2;
-
-  tbl[i] = rnd1-rnd2;
-  if (tbl[i] < 0) tbl[i] += m1;
+		  x = a1*(rnd1%q1);
+		  y = r1*(rnd1/q1);
+		  rnd1 = x-y;
+		  if (rnd1 < 0)
+			rnd1 += m1;
+		  x = a2*(rnd2%q2); 
+		  y = r2*(rnd2/q2);
+		  rnd2 = x-y;
+		  if (rnd2 < 0)
+			rnd2 += m2;
+		  tbl[i] = rnd1-rnd2;
+		  if (tbl[i] < 0)
+			tbl[i] += m1;
       }
-      sre_randseed = 0;   /* drop the flag. */
-    }/* end of initialization*/
-
-
-  x    = a1*(rnd1%q1);   /* LCG1 in action... */
+      sre_randseed = 0;
+  }
+  x    = a1*(rnd1%q1);
   y    = r1*(rnd1/q1);
   rnd1 = x-y;
-  if (rnd1 < 0) rnd1 += m1;
-
-  x    = a2*(rnd2%q2);   /* LCG2 in action... */
+  if (rnd1 < 0)
+	rnd1 += m1;
+  x    = a2*(rnd2%q2);
   y    = r2*(rnd2/q2);
   rnd2 = x-y;
-  if (rnd2 < 0) rnd2 += m2;
-
-        /* Choose our random number from the table... */
+  if (rnd2 < 0) 
+	rnd2 += m2;
   i   = (int) (((double) rnd / (double) m1) * 64.);
   rnd = tbl[i];
-      /* and replace with a new number by L'Ecuyer. */
   tbl[i] = rnd1-rnd2;
-  if (tbl[i] < 0) tbl[i] += m1;
-
+  if (tbl[i] < 0)
+	tbl[i] += m1;
   return ((double) rnd / (double) m1);  
 }
 
@@ -162,16 +155,10 @@ int StrShuffle(string &s1, string s2)
       s1[pos]   = s1[len-1];
       s1[len-1] = c;
 
-    }/*
-    for(i; i <= s2.length(); i++){
-        printf("%c", s1[i]);
-      }
-    printf("\n");*/
+    }
   return 1;
 }
 
-//
-//
 /* Funcion principal
  *  1) Leer los argumentos de la línea de comandos.
  *  2) populate() de loader.cpp para leer los parámetros termodinámicos definidos 
@@ -286,7 +273,6 @@ int main(int argc, char** argv) {
 		 la energía óptima. Definido en el archivo algorithms.c*/
 	    energia = energy/100.00;
 	    cout << "\nEnergia minima libre: " << energia <<endl;
-		//cout << "El calculo demoró: "<<t1<<" segundos";
 		copiaseg = segmento;
 		for (int i=0; i<1000; i++){
 			StrShuffle(copiaseg,segmento); // NO demora, no es necesario paralelizar
@@ -311,9 +297,7 @@ int main(int argc, char** argv) {
 		for (int j=0; j<1000; j++){
 				desv = (energy_random_desv[j] - energy_random_prom)*(energy_random_desv[j] - energy_random_prom)+desv; 
 		}
-		//  printf("\nValor-prom = %f\n", energy_random_prom);
 		desv = sqrt(desv/1000);
-		//	printf("Valor-desv = %f\n", desv);
 		Z = (energia - (energy_random_prom))/desv;
 		printf("Valor-Z = %f\n", Z);
 		cuenta++;

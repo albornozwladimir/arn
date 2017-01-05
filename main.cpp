@@ -14,10 +14,6 @@
 #include "loader.cpp"
 #include "algorithms.c"
 #include "main.h"
-/*
-#ifdef _OPENMP   // Para poder paralelizar el calculo
-#include "omp.h"
-#endif*/
 // Para la generación de secuencias random
 static int sre_randseed = 42;
 #define CHOOSE(a)   ((int) (sre_random() * (a)))
@@ -186,8 +182,8 @@ int StrShuffle(string &s1, string s2)
 int main(int argc, char** argv) {
 	int i,i2,i3,i4;
 	ifstream cf;
-	int bases;
-	string s, seq, s_random;
+	int bases, largoseq=0;
+	string s, seq, s_random, segmento, copiaseg;
 	int energy;
 	float energia;
 	double energy_random_prom,valor_extraido;
@@ -195,6 +191,8 @@ int main(int argc, char** argv) {
 	double desv=0,desv1=0,desv2=0,desv3=0,desv4=0;
 	double Z;
 	double t1;
+	cout <<  "Ingrese el largo de los segmentos: \n" ; 
+	cin >> largoseq;
 	ILSA = FALSE;
 	NOISOLATE = FALSE;
 	/* Leyendo linea de comandos */
@@ -254,62 +252,81 @@ int main(int argc, char** argv) {
 	}
 	s = seq;
 	bases = s.length();
-	init_variables(bases);
 	cout << "Secuencia ingresada: " << s << endl;   // Se imprime la secuencia
 	cout << "Largo de la secuencia: " << bases <<endl; // Se imprime el largo de la secuencia
 	cf.close();
-	int **fbp = NULL, **pbp = NULL;
-	int numfConstraints = 0, numpConstraints = 0;
-	if (handle_IUPAC_code(s, bases)  == FAILURE)
-	{
-		exit(0);
-	}	
-	if(USERDATA==TRUE)
-		populate(argv[dataIndex],true);
-	else if (PARAMS == TRUE)
-		populate(argv[paramsIndex],false);
-	else
-		populate("combinaciones",false); //Lectura de archivos termodinámicos
-	initTables(bases); // Se inicializan variables globales de acuerdo a las bases de la secuencia
-	t1 = segundos();  // Se empieza a calcular el tiempo
-	energy = calculate(bases, fbp, pbp, 0, 0); /* Ejecuta el algoritmo de programación dinámica para calcular
-	 la energía óptima. Definido en el archivo algorithms.c*/
-    t1 = segundos() - t1; // Calculo de tiempo para la energia de la secuencia completa
-    energia = energy/100.00;
-	cout << "\nEnergia minima libre: " << energia <<endl;
-	cout << "El calculo demoró: "<<t1<<" segundos"<<endl<<endl;
+	int cuenta=0;
+	int cont=0;
+	string busq;
 	t1 = 0;
-	t1 = segundos();  // Se empieza a calcular el tiempo para el Z-Score
-	for (int i=0; i<1000; i++){
-		StrShuffle(s,seq); // NO demora, no es necesario paralelizar
-		int bases2 = s.length();
+	t1 = segundos();  // Se empieza a calcular el tiempo
+	for(int conts=0; cont <= bases; cont=cont+largoseq/2){
+		segmento = s.substr(cont, largoseq);
+		if(segmento.length() < largoseq){
+			segmento = s.substr(cont);
+		}
+		cout << "El segmento "<< cuenta << " es: " << segmento; 
+		copiaseg=segmento;
+		int bases2=segmento.length();
 		init_variables(bases2);
-		if (handle_IUPAC_code(s, bases2)  == FAILURE) // Para el error
+		int **fbp = NULL, **pbp = NULL;
+		int numfConstraints = 0, numpConstraints = 0;
+		if (handle_IUPAC_code(segmento, bases2)  == FAILURE)
 		{
 			exit(0);
-		}
+		}	
 		if(USERDATA==TRUE)
 			populate(argv[dataIndex],true);
 		else if (PARAMS == TRUE)
 			populate(argv[paramsIndex],false);
 		else
-			populate("combinaciones",false);			
-		initTables(bases2);
-		valor_extraido = calculate(bases2, fbp, pbp, numfConstraints, numpConstraints);
-		energy_random_prom = valor_extraido + energy_random_prom; 
-		energy_random_desv[i] = valor_extraido/100.00;
+			populate("combinaciones",false); //Lectura de archivos termodinámicos
+		initTables(bases2); // Se inicializan variables globales de acuerdo a las bases de la secuencia
+		energy = calculate(bases2, fbp, pbp, 0, 0); /* Ejecuta el algoritmo de programación dinámica para calcular
+		 la energía óptima. Definido en el archivo algorithms.c*/
+	    energia = energy/100.00;
+	    cout << "\nEnergia minima libre: " << energia <<endl;
+		//cout << "El calculo demoró: "<<t1<<" segundos";
+		copiaseg = segmento;
+		for (int i=0; i<1000; i++){
+			StrShuffle(copiaseg,segmento); // NO demora, no es necesario paralelizar
+			int bases2 = segmento.length();
+			init_variables(bases2);
+			if (handle_IUPAC_code(copiaseg, bases2)  == FAILURE) // Para el error
+			{
+				exit(0);
+			}
+			if(USERDATA==TRUE)
+				populate(argv[dataIndex],true);
+			else if (PARAMS == TRUE)
+				populate(argv[paramsIndex],false);
+			else
+				populate("combinaciones",false);			
+			initTables(bases2);
+			valor_extraido = calculate(bases2, fbp, pbp, numfConstraints, numpConstraints);
+			energy_random_prom = valor_extraido + energy_random_prom; 
+			energy_random_desv[i] = valor_extraido/100.00;
+		}
+		energy_random_prom = energy_random_prom/(100000);
+		for (int j=0; j<1000; j++){
+				desv = (energy_random_desv[j] - energy_random_prom)*(energy_random_desv[j] - energy_random_prom)+desv; 
+		}
+		//  printf("\nValor-prom = %f\n", energy_random_prom);
+		desv = sqrt(desv/1000);
+		//	printf("Valor-desv = %f\n", desv);
+		Z = (energia - (energy_random_prom))/desv;
+		printf("Valor-Z = %f\n", Z);
+		cuenta++;
+		conts++;
+		if(segmento.length() < largoseq){
+			cont = bases;
+		}
+		desv=0;
+		Z=0;
+		energy_random_prom=0;
 	}
-	energy_random_prom = energy_random_prom/(1000*100);
-	for (i=0; i<1000; i++){
-		desv = (energy_random_desv[i] - energy_random_prom)*(energy_random_desv[i] - energy_random_prom)+desv; 
-	}
-//  	printf("\nValor-prom = %f\n", energy_random_prom);
-  	desv = sqrt(desv/1000);
-  //	printf("Valor-desv = %f\n", desv);
-  	Z = (energia - (energy_random_prom))/desv;
-  	printf("Valor-Z = %f\n", Z);
-  	t1 = segundos() - t1; // Calculo de tiempo para la energia de la secuencia completa
-	cout << "El calculo del Z-Score demoro "<<t1<<" segundos"<<endl;
+	t1 = segundos() - t1; // Calculo de tiempo para la energia de la secuencia completa
+	cout << "El calculo del Z-Score para todos los segmentos demoro "<<t1<<" segundos"<<endl<<endl;
 	return 0;
 }
 

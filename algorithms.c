@@ -15,7 +15,7 @@ unsigned int chPairKey;
 int plen = 0, flen = 0, sslen = 0;
 int *pbpi, *pbpj, *fbpi, *fbpj, *ss;
 
-/* This function calculates chPairKey to be processed by function chPair. Defined by Professor Bader. */
+// Esta función calcula que chPairKey sea procesado por la función chPair. 
 void init_chPair() {
 	int i, j;
 
@@ -41,7 +41,7 @@ int update_chPair(int i, int j)
 }
 
 
-/* This pragma returns 1 if  base b1 and b2 can pair up, otherwise returns 0, using chPairKey calculated in init_chPair function. Here b1 and b2 are 0-3 to represent one of the four nucleotides A, C, G and U. */
+// Este pragma devuelve 1 si la base b1 y b2 pueden emparejarse, de lo contrario devuelve 0, usando chPairKey calculado en la función init_chPair. Aquí b1 yb2 son 0-3 para representar uno de los cuatro nucleótidos A, C, G y U
 #if 0
 inline
 int chPair(int b1, int b2) {
@@ -51,7 +51,7 @@ int chPair(int b1, int b2) {
 #define chPair(a, b)  (chPairKey & (1 << (((a)<<2) + (b))))  /* Please try to run this, to understand this statement. Defined by Professor Bader. */
 #endif
 
-/* Initialize variables.*/
+// Inicialización de variables
 void initTables(int len) {
 
 	int i, j;
@@ -74,7 +74,7 @@ void initTables(int len) {
 	init_chPair();
 
 	for (i = 0; i < LENGTH; i++) {
-		W[i] = INFINITY_; /* Initializing W array with INFINITY make sure that an unfolded sequence will have a large +ve value for free energy - INIFINITY*/
+		W[i] = INFINITY_; // Inicializando la matriz W con INFINITY
 		constraints[i] = 0;
 #if 0
 		indx[i] = (LENGTH-1)*(i-1) - (i*(i-1))/2;
@@ -86,29 +86,24 @@ void initTables(int len) {
 			WM[i][j] = INFINITY_;
 		}
 	}
-
 	LLL = (LENGTH - 1) * (LENGTH) / 2 + 1;
-
 	for (i = 0; i < LLL; i++)
 		V[i] = INFINITY_;
 	for (i = 0; i <= LENGTH - 1; i++)
 		indx[i] = (len) * (i - 1) - (i * (i - 1)) / 2;
-
 	return;
 }
 
 int checkSS(int i, int j) {
-
 	int it;
 	for (it = i + 1; it < j; it++) {
 		if (constraints[it] > 0)
 			return 1;
 	}
 	return 0;
-
 }
 
-//Funcion principal que permite ejecutar los calculos de energia y ZScore
+//Funcion principal que permite ejecutar los calculos de energia
 int calculate(int len, int **forceList, int **prohibitList, int forcelen, int prohibitlen) {
 	int b, i, j, it, k;
 	for(i=1;i<=len;i++) 
@@ -118,7 +113,6 @@ int calculate(int len, int **forceList, int **prohibitList, int forcelen, int pr
 	}	
 	if (prohibitlen != 0) 
 	{
-		#pragma omp parallel for schedule(auto)
 			for (it = 0; it < prohibitlen; it++) 
 			{
 				for(k= 1; k <= prohibitList[it][2];k++)
@@ -133,7 +127,6 @@ int calculate(int len, int **forceList, int **prohibitList, int forcelen, int pr
 	}
 	if (forcelen != 0) 
 	{
-		#pragma omp parallel for schedule(auto)
 			for (it = 0; it < forcelen; it++) 
 			{
 				for(k=1; k <= forceList[it][2];k++)
@@ -147,26 +140,24 @@ int calculate(int len, int **forceList, int **prohibitList, int forcelen, int pr
 				}
 			}
 	}
-	/* Here b-1 is the length of the segment closed with (i,j) base pair. We assume the minimum size of a hairpin loop closed with (i,j) equal to 3.*/
+	// Aquí b-1 es la longitud del segmento cerrado con (i, j) par de bases. Suponemos que el tamaño mínimo de un lazo horquilla cerrado con (i, j) igual a 3
 
-	/* For b = 4 to 6, hairpin loops and at b = 6 stack loops are possible. So, only WM, and V array are needs to be calculated.
-	 * If (i,j) can not pair up then only WM needs to be calculated.
-	 * */
+	// Para b = 4 a 6, los bucles horquilla y en b = 6 bucles de la pila son posibles. Por lo tanto, sólo WM, y V matriz deben ser calculados.
+	 // Si (i, j) no puede emparejarse entonces sólo necesita ser calculado WM.
+	 
 	for (b = 4; b <= 6; b++) {
 	#pragma omp parallel for private (i,j) schedule(guided)
 		for (i = 1; i <= len - b; i++) {
 			j = i + b;
-			//if (constraints[i] == -1 && constraints[j] == -1)
-			//	continue;
-			if (chPair(RNA[i], RNA[j])) /* Check if bases i and j pair up or not */
-				calcVWM(i, j, INFINITY_, INFINITY_); /* Calculates V and WM array for element (i,j)*/
+			if (chPair(RNA[i], RNA[j])) // Comprueba si las bases i y j se juntan o no
+				calcVWM(i, j, INFINITY_, INFINITY_); // Calcula el array V y WM para el elemento (i, j)
 			else
-				calcWM(i, j); /* Calculates WM array for element (i,j)*/
+				calcWM(i, j); // Calcula el array WM para el elemento (i, j)
 		}
 	}
 
-	/* Please note that computations of internal loops using speedup algorithm has to be done for every closing base pair (i,j) even if it is not capable of pairing up.
-	 * To take care of this, both cases have been separated using a boolean variable ILSA*/
+	// Tener en cuenta que los cálculos de bucles internos utilizando el algoritmo de aceleración tiene que hacerse para cada par de bases de cierre (i, j) incluso si no es capaz de emparejarse.
+    // * Para ocuparse de esto, ambos casos han sido separados usando una variable booleana ILSA
 
 	if (ILSA == FALSE) { /* If we are executing internal loop speedup algorithm (ILSA) */
 		/* For b=7 to 10, base pair (i,j) is not able to form multiloops. */
@@ -187,59 +178,54 @@ int calculate(int len, int **forceList, int **prohibitList, int forcelen, int pr
 			for (i = 1; i <= len - b; i++) {
 				j = i + b;
 				if (chPair(RNA[i], RNA[j])) {
-					calcVBIVMVWM(i, j); /* Calculates VBI, VM, V and WM elements at (i,j) */
+					calcVBIVMVWM(i, j); // Calcula los elementos VBI, VM, V y WM en (i, j)
 				} else
-					calcWM(i, j); /* Calculates WM element at (i,j) */
+					calcWM(i, j); // Calcula el elemento WM en (i, j)
 			}
 		}
-	} else { /* If we are executing with ILSA - Internal loop speedup algorithm */
+	} else { // Si estamos ejecutando con ILSA - algoritmo de aceleración de bucle interno
 		for (b = 7; b <= 10; b++) {
+		#pragma omp parallel for private (i,j) schedule(guided)
 			for (i = 1; i <= len - b; i++) {
 				j = i + b;
-				calcVBIS(i, j); /* Calculates VBI[i][j] array with Internal loop speedup algorithm (ILSA) */
-				//if (constraints[i] == -1 && constraints[j] == -1)
-				//	continue;
+				calcVBIS(i, j); // Calcula la matriz VBI [i] [j] con el algoritmo de aceleración de bucle interno (ILSA)
 				if (chPair(RNA[i], RNA[j])) {
-					calcVWM(i, j, VBI[i][j], INFINITY_); /* Calculates V and WM element at (i,j) */
+					calcVWM(i, j, VBI[i][j], INFINITY_); // Calcula el elemento V y WM en (i, j)
 				} else {
 					calcWM(i, j);
-				} /* Calculates WM element at (i,j) */
+				}
 			}
 		}
 
 		for (b = 11; b <= len - 1; b++) {
+		#pragma omp parallel for private (i,j) schedule(guided)
 			for (i = 1; i <= len - b; i++) {
 				j = i + b;
-				calcVBIS(i, j); /* Calculation of VBI array at (i,j) - Done in both cases whether (i,j) pairs up or not*/
-				//if (constraints[i] == -1 && constraints[j] == -1)
-				//	continue;
+				calcVBIS(i, j); // Cálculo de la matriz VBI en (i, j) - Hecho en ambos casos si (i, j) se agrupa o no
 				if (chPair(RNA[i], RNA[j])) {
-					calcVMVWM(i, j); /* Calculation of VM, V, WM in Order at (i,j)*/
+					calcVMVWM(i, j); // Cálculo de WM, V, WM en orden en (i, j)
 				} else
-					calcWM(i, j); /* Calculation of WM at (i,j)*/
+					calcWM(i, j); // Cálculo de WM en (i, j)
 			}
 		}
 	}         
-		for (j = 5; j <= len; j++) /* Recurssion relation for W array does not depend upon any other array, so can be done after the computation of other arrays are finished.*/
+		for (j = 5; j <= len; j++) // La relación de recursión para la matriz W no depende de ninguna otra matriz, por lo que se puede hacer después de que el cálculo de otras matrices estén terminadas.
 			calcW(j);
 	return W[len];
 }   // Fin de la funcion que calcula
 
-/* This function calculates the optimal energy of internal loops closed with base pair (i,j) using a heuristic, which limits their size to a constant value - MAXLOOP
- An internal loop contains one closing base pair (i,j) and one enclosed base pair (ip,jp). This function searches for the best enclosed base pair for the closing base pair (i,j) within the given window limited by MAXLOOP
+/* Esta función calcula la energía óptima de bucles internos cerrados con pares de bases (i, j) usando una heurística, lo que limita su tamaño a un valor constante - MAXLOOP
+ Un bucle interno contiene un par de bases de cierre (i, j) y un par de bases cerrado (ip, jp). Esta función busca el mejor par de bases cerrado para el par de bases de cierre (i, j) dentro de la ventana dada limitada por MAXLOOP
  */
 void calcVBI(int i, int j) {
 
 	int ip, jp, temp, VBIij, thres1;
-
 	VBIij = INFINITY_;
 
 	if ((constraints[i] > 0 && constraints[i] != j) || (constraints[j] > 0
-			&& constraints[j] != i) || constraints[i] == -1 || constraints[j]
-			                                                               == -1)
+			&& constraints[j] != i) || constraints[i] == -1 || constraints[j] == -1)
 		return;
-
-	/* Having ip = i+1 and jp = j-1, creates a stack loop. Stack loops are taken care separately in the calculation of V  using eS() function. Therefore, for ip=i+1, the jp value should be lesser than or equal to j-2.*/
+	// Teniendo ip = i + 1 y jp = j-1, crea un bucle de pila. Los bucles de pila se cuidan por separado en el cálculo de V utilizando la función eS (). Por lo tanto, para ip = i + 1, el valor jp debe ser menor o igual que j-2
 	ip = i + 1;
 	thres1 = MAX((j - 1) + (ip - i - 1) - MAXLOOP, ip + 4); /* Minimum size of the hairpin loop which the enclosed base pair (ip,jp) can close is 3 that results in the minimum value of jp = ip+4 */
 	for (jp = thres1; jp <= j - 2; jp++) {

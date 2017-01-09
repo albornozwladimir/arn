@@ -218,25 +218,27 @@ void calcVBI(int i, int j) {
 		return;
 	// Teniendo ip = i + 1 y jp = j-1, crea un bucle de pila. Los bucles de pila se cuidan por separado en el cálculo de V utilizando la función eS (). Por lo tanto, para ip = i + 1, el valor jp debe ser menor o igual que j-2
 	ip = i + 1;
-	thres1 = MAX((j - 1) + (ip - i - 1) - MAXLOOP, ip + 4); /* Minimum size of the hairpin loop which the enclosed base pair (ip,jp) can close is 3 that results in the minimum value of jp = ip+4 */
+	thres1 = MAX((j - 1) + (ip - i - 1) - MAXLOOP, ip + 4); 
+	/*Minimo tamaño del loop de horquilla que puede cerrar el par (ip, jp) es 3 que resulta en el valor minimo de jp=ip+4  */
 	for (jp = thres1; jp <= j - 2; jp++) {
-		//May need to check the constraint condition here
 		if (chPair(RNA[ip], RNA[jp])) {
 			if (checkSS(i, ip) || checkSS(jp, j))
 				continue;
-			temp = eL(i, j, ip, jp) + V[indx[ip] + jp]; /* Energy of internal loop closed by (i,j) and (ip,jp) + the optimal energy of the substructure closed by (ip,jp)*/
+			temp = eL(i, j, ip, jp) + V[indx[ip] + jp]; 
+			/* Energia del loop interno cerrado por (i,j) y (ip, jp) + la energía optima de la subestructura cerrada por (ip,jp)*/
 			if (VBIij > temp)
 				VBIij = temp;
 		}
 	}
 	for (ip = i + 2; ip <= i + MAXLOOP + 1; ip++) {
-		thres1 = MAX((j - 1) + (ip - i - 1) - MAXLOOP, ip + 4); /* Minimum size of a hairpin loop is 3, so start jp from ip+4*/
-		//May need to check for forced constraints here
+		thres1 = MAX((j - 1) + (ip - i - 1) - MAXLOOP, ip + 4); 
+		/* El tamaño minimo de un loop de horquilla es 3, entonces jp inicia de ip+4 */
 		for (jp = thres1; jp <= j - 1; jp++) {
 			if (chPair(RNA[ip], RNA[jp])) {
 				if (checkSS(i, ip) || checkSS(jp, j))
 					continue;
-				temp = eL(i, j, ip, jp) + V[indx[ip] + jp]; /* Energy of internal loop closed by (i,j) and (ip,jp) + the optimal energy of the substructure closed by (ip,jp)*/
+				temp = eL(i, j, ip, jp) + V[indx[ip] + jp]; 
+				/*Energía de un loop interno cerrado por (i,j) y (ip,jp) + la energía optima de la subestructura cerrada por (ip,jp)*/				
 				if (VBIij > temp)
 					VBIij = temp;
 			}
@@ -246,15 +248,15 @@ void calcVBI(int i, int j) {
 	return;
 }
 
-/* Amrita: - Internal loop speedup algorithm */
-/* Calculation of internal loops using internal loop speedup algorithm. The algorithm calculates the optimal loop closed with base pair (i,j) */
+/* Algoritmo de speedup para loops internos */
+/* Calculo de loops internos utilizando este algoritmo de speedup. El algoritmo calcula el loop optimo cerrado por el par base (i,j) */
 void calcVBIS(int i, int j) {
 	int ip, jp, E, VBIij, c = 3, b, len = LENGTH - 1, E1, E2, g; /* ip and jp form enclosed base pairs and c is a small constant currently taken as 3. The loops having one or both sides smaller than c are calculated as special cases. */
 	if ((constraints[i] > 0 && constraints[i] != j) || (constraints[j] > 0 && constraints[j] != i) || constraints[i] == -1 || constraints[j] == -1)
 		return;
 	VBIij = VBI[i][j];
-	/*Case1: Loops having first side shorter than c and second side has all allowable sizes */
-	/* Having ip = i+1 and jp=j-1 creates a stack which is considered separately in eS function. So here the max value of jp could be j-2*/
+	/*Caso 1: los loops tienen el primer lado mas corto que c y el segundo lado tiene todos los tamaños permitidos*/
+	/*Teniendo ip=i+1 y jp=j-1 crea un stack el cual se trabaja con la funcion eS. Entonces aqui el valor maximo de jp será j-2 */
 	ip = i + 1;
 	for (jp = ip + 4; jp <= j - 2; jp++) {
 		if (chPair(RNA[ip], RNA[jp])) {
@@ -264,7 +266,7 @@ void calcVBIS(int i, int j) {
 		}
 	}
 	for (ip = i + 2; ip <= i + c; ip++) {
-		for (jp = ip + 4; jp <= j - 1; jp++) { /* Minimum size of a hairpin loop is 3.*/
+		for (jp = ip + 4; jp <= j - 1; jp++) { /* tamaño minimo de un loop de horquilla es 3.*/
 			if (chPair(RNA[ip], RNA[jp])) {
 				E = eL(i, j, ip, jp) + V[indx[ip] + jp];
 				if (VBIij > E)
@@ -272,9 +274,9 @@ void calcVBIS(int i, int j) {
 			}
 		}
 	}
-	/*Case 2: When the first side is greater or equal to c but the second side is smaller */
+	/*Caso 2: Cuando el primer lado es mayor o igual a c pero el segundo es mas pequeño*/
 	for (ip = i + c + 1; ip < j - 1; ip++) {
-		for (jp = j - c; jp <= j - 1 && jp >= ip + 4; jp++) { /* Minimum size of a hairpin loop is 3.*/
+		for (jp = j - c; jp <= j - 1 && jp >= ip + 4; jp++) { /* tamaño minimo de un loop de horquilla es 3.*/
 			if (chPair(RNA[ip], RNA[jp])) {
 				E = eL(i, j, ip, jp) + V[indx[ip] + jp];
 				if (VBIij > E)
@@ -282,28 +284,28 @@ void calcVBIS(int i, int j) {
 			}
 		}
 	}
-	/* Case 3: General Case - when both sides of internal loops are greater than or equal to c */
-	/*Base cases for this (i,j) are g=j-i-2c-3 and j-i-2c-4, gap values should always be greater than or equal to 3*/
-	/* First base case - both sides of the loop are  equal to c.*/
+	/*Caso 3: Caso general, cuando ambos lados de los loops internos son mayores o iguales a c*/
+	/*Casos base para este (i,j) son g=j-i-2c-3 y j-i-2c-4, los valores de brecha deben ser siempre mayores o iguales a 3 */
+	/* Primer caso base, ambos lados del loop son iguales a c*/
 	ip = i + c + 1;
 	jp = j - c - 1;
 	g = jp - ip - 1;
 	if (g < 3) {
 		VBI[i][j] = VBIij;
 		return;
-	} /* if g is lesser than 3, then you don't extend this value. In this case the second base case of g-1=j-i-2c-4 will also not make a valid gap value. */
+	} /* si g es menor que 3, entonces no se extiende este valor. En este caso el segundo caso base g-1=j-1-2c-4 tampoco hará una valor de brecha válido*/
 	E = eL(i, j, ip, jp) + V[indx[ip] + jp];
 	if (VBIij > E)
 		VBIij = E;
-	/* Extend this base case for all closing base pairs of the form ( i-b, j+b ) */
+	/* Se extiende este caso base para todos los pares base de la forma (i-b, j+b)*/
 	for (b = 1; b <= MIN(i - 1, len - j); b++) {
 		E = eL(i - b, j + b, ip, jp) + V[indx[ip] + jp];
-		/* Two more options for base pair (i-b,j+b), which are introduced by having one of the side of the resultant internal loop exactly equal to c */
-		/* Second side is c - with closing base pair (i-b,j+b)*/
+		/* Dos opciones mas para el par base (i-b,j+b), estas son introducidas teniendo uno de los lados el resultante loop interno exactamente igual a c */
+		/* El segundo lado es c con el par base (i-b,j+b) cerrando  */
 		int ip1 = i + c + 1 + b;
 		int jp1 = (j + b) - c - 1;
 		E1 = eL(i - b, j + b, ip1, jp1) + V[indx[ip1] + jp1];
-		/* First side is c - with closing base pair (i-b,j+b)*/
+		/* El primer lado es c con el par base (i-b,j+b) cerrando */
 		int ip2 = (i - b) + c + 1;
 		int jp2 = j - c - 1 - b;
 		E2 = eL(i - b, j + b, ip2, jp2) + V[indx[ip2] + jp2];
@@ -324,7 +326,7 @@ void calcVBIS(int i, int j) {
 	if (g == 3) {
 		VBI[i][j] = VBIij;
 		return;
-	} /* In this case the gap g-1=2, which should not be extended.*/
+	} /* En este caso la brecha g-1=2, la cual no debiera ser extendida*/
 	ip = i + c + 2;
 	jp = j - c - 1;
 	E1 = eL(i, j, ip, jp) + V[indx[ip] + jp];
@@ -339,12 +341,12 @@ void calcVBIS(int i, int j) {
 	}
 	for (b = 1; b <= MIN(i - 1, len - j); b++) {
 		E = eL(i - b, j + b, ip, jp) + V[indx[ip] + jp];
-		/*Two more options for base pair (i-b,j+b), having one of the sides equal to c */
-		/* First side is equal to c*/
+		/*Dos mas opciones para el par base (i-b,j+b), teniendo uno de los lados iguales a c  */
+		/* El primer lado es igual a c */
 		int ip1 = (i - b) + c + 1;
 		int jp1 = (j) - c - 2 - b;
 		E1 = eL(i - b, j + b, ip1, jp1) + V[indx[ip1] + jp1];
-		/* Second side is equal to c*/
+		/* El segundo lado es igual a c */
 		int ip2 = i + c + 2 + b;
 		int jp2 = (j + b) - c - 1;
 		E2 = eL(i - b, j + b, ip2, jp2) + V[indx[ip2] + jp2];
@@ -365,17 +367,21 @@ void calcVBIS(int i, int j) {
 	VBI[i][j] = VBIij;
 }
 
-/* Function for calculating the value of WM(i,j)*/
+/* Función para calcular el valor de WM(i,j) */
 void calcWM(int i, int j) {
-	int b = multConst[2], c = multConst[1]; /* b is the branch penalty and c is penalty for single bases for multiloops*/
+	int b = multConst[2], c = multConst[1]; /* b es la penalidad de brecha y c es la penalidad para bases singulares de multiloops */
 	int h;
-	/* WMidjd = dangling base on both ith and jth side.  WMidj = dangling base on ith side. WMijd = dangling base on jth side. WMij = no dangling base on both sides  */
+	/* WMidjd= base colgada en los lados i-ésimo y j-ésimo. 
+	WMidj=base colgada en el lado i-ésimo.
+	WMijd=base colgada en el lado j-ésimo.
+	WMij = sin base colgada en ambos lados
+	 */
 	int WMidjd, WMidj, WMijd, WMij, WMijp;
 	int rnai, rnaj;
-	rnai = RNA[i]; /* Read the value of RNA[i] and RNA[j] in register to make the program execute faster.*/
+	rnai = RNA[i]; /* Se lee el valor de RNA[i] y RNA[j] para hacer más rápida la ejecución del programa */
 	rnaj = RNA[j];
-	WMijp = INFINITY_; /* See, the data flow through the function - how it has been calculated. */
-	/* Minimum size of a hairpin loop is 3, that makes the starting limit of h=i+4 and end limit of j-5*/
+	WMijp = INFINITY_;
+	/* El tamaño minimo de un loop de horquilla es 3, eso hace que el limite de inicio sea h=i+4 y el de final sea j-5  */ 
 	for (h = i + 4; h < j - 4; h++) {
 		int temp = WM[i][h] + WM(h+1,j);
 		if (temp <= WMijp)
@@ -385,22 +391,21 @@ void calcWM(int i, int j) {
 	WMidj = INFINITY_;
 	WMijd = INFINITY_;
 	WMij = INFINITY_;
-	/* If base i and j pair up. */
+	/* Si la base i y j se parean*/
 	WMij = V[indx[i] + j] + auPen(rnai, rnaj) + b;
-	/* If base i+1 and j pair up. Add the dangling interaction energy of base pair (i+1,j) with base i being on the 3' end */
+	/* Si la base i+1 y j se parean. Se agrega la energia de la interacción colgante del par base (i+1,j) con la base i estando en el final 3'  */
 	if (constraints[i] <= 0)
 		WMidj = V[indx[i + 1] + j] + dangle[rnaj][RNA[i + 1]][rnai][1] + auPen(RNA[i + 1], rnaj) + b + c;
-	/* If base i and j-1 pair up. Add the dangling interaction energy of base pair (i,j-1) with base j being on the 5' end */
+	/* Si la base i y j-1 se parean. Se agrega la energia de la interacción colgante del par base (i,j-1) con la base j estando en el final 5'  */
 	if (constraints[j] <= 0)
 		WMijd = V[indx[i] + j - 1] + dangle[RNA[j - 1]][rnai][rnaj][0] + auPen(rnai, RNA[j - 1]) + b + c;
-	/* If base i+1 and j-1 pair up. Add the dangling interaction energy of base pair (i+1,j-1) with base i on the 3' and base j on the 5' end.*/
+	/* Si la base i+1 y j-1 se parean. Se agrega la energia de la interacción colgante del par base (i+1,j-1) con la base i estando en el final 3' y la base j estando en el final 5'  */
 	if (constraints[i] <= 0 && constraints[j] <= 0)
 		WMidjd = V[indx[i + 1] + j - 1] + dangle[RNA[j - 1]][RNA[i + 1]][rnai][1] + dangle[RNA[j - 1]][RNA[i + 1]][rnaj][0] + auPen(RNA[i + 1], RNA[j - 1]) + b + 2* c ;
-	/* Take the minimum of all of the terms */
+	/* Se toma el minimo de todos los términos */
 	WMij = MIN(MIN(WMij, WMidj), MIN(WMijd, WMidjd));
 	int WMsip1j = INFINITY_;
 	int WMsijm1 = INFINITY_;
-
 	if (constraints[i] <= 0)
 		WMsip1j = WM[i + 1][j];
 	if (constraints[j] <= 0)
@@ -408,11 +413,12 @@ void calcWM(int i, int j) {
 	WMij = MIN(MIN(WMsip1j + c, WMsijm1 + c), WMij);
 	WMij = MIN(WMijp, WMij);
 	WM[i][j] = WMij;
-	WM(i,j) = WMij; /* Extra instruction. NOTE that - by having this instruction we are making WM array symmetric. The macro will convert this instruction into WM[j][i] = WM[i][j] making WM array symmetric.*/
+	WM(i,j) = WMij; 
+	/* con esta instrucción se hace el arreglo WM simétrico. Esta macro convertirá esta instrucción en WM[j][i] = WM[i][j] haciendo que WM sea simétrico.  */
 	return;
 }
 
-/* Function used for calculating the value of V and WM for a given i,j pair. Calculation of WM at (i,j) requires value of V at (i,j)*/
+/* Función usada para calcular el valor de V y WM para un par i,j dado. El calculo de WM en (i,j) requiere el valor de V para (i,j) */
 void calcVWM(int i, int j, int VBIij, int VMij) {
 	int a, b, c, h, Vij, eh, es;
 	int WMidjd, WMidj, WMijd, WMij, WMijp;
@@ -423,9 +429,9 @@ void calcVWM(int i, int j, int VBIij, int VMij) {
 	WMidj = INFINITY_;
 	WMijd = INFINITY_;
 	WMij = INFINITY_;
-	/* V starts */
-	eh = eH(i, j); /* Energy of a hairpin loop */
-	es = eS(i, j); /* Energy of a stack, with (i,j) and (i-1,j+1) base pairs.*/
+	/* Se inicia V */
+	eh = eH(i, j); /*Energía de un loop de horquilla */
+	es = eS(i, j); /*Energía de un stack, con (i,j) y (i-1,j+1) pares de bases */
 	if (es == 0) {
 		es = INFINITY_;
 	} else
@@ -435,10 +441,11 @@ void calcVWM(int i, int j, int VBIij, int VMij) {
 		Vij = INFINITY_;
 	V[indx[i] + j] = Vij;
 	if (NOISOLATE == TRUE && Vij < INFINITY_) {
-		//Check if i+1,j-1 have paired
+		//Se verifica si i+1,j-1 se han pareado
 		if (V[indx[i + 1] + j - 1] > INFINITY_ - SMALLINFTY_) {
-			//If not then check for i-1, j+1
-			//Isolated base pairs look ahead
+			
+			//Si no se revisa i-1,j+1
+			//Con pares de bases isolados se verifica adelante
 			int eHL = eH(i - 1, j + 1);
 			int eSL = eS(i - 1, j + 1) + V[indx[i] + j];
 			if (i - 1 == 0) {
@@ -447,7 +454,7 @@ void calcVWM(int i, int j, int VBIij, int VMij) {
 			}
 			int Vijl = (eHL < eSL) ? eHL : eSL;
 			if (Vijl > INFINITY_ - SMALLINFTY_)
-				//isolated base pair found.. setting energy to infinity
+				//Si se encuentra un par de bases, la energía se setea a infinito
 				V[indx[i] + j] = Vij = INFINITY_;
 		}
 	}
@@ -456,8 +463,8 @@ void calcVWM(int i, int j, int VBIij, int VMij) {
 	if (indx[i]+j > (LENGTH-1)*(LENGTH)/2)
 		printf("ERROR: En calcVMW: i: %5d  j: %5d\n",i,j);
 #endif
-	/* V ends */
-	/* WM starts */
+	/* V finaliza */
+	/* WM inicia */
 	a = multConst[0];
 	b = multConst[2];
 	c = multConst[1];
@@ -485,21 +492,22 @@ void calcVWM(int i, int j, int VBIij, int VMij) {
 	WMij = MIN(MIN(WMsip1j + c, WMsijm1 + c), WMij);
 	WMij = MIN(WMijp, WMij);
 	WM[i][j] = WMij;
-	WM(i,j) = WMij; /* extra instruction */
-	/* WM ends */
+	WM(i,j) = WMij;
+	/* WM finaliza*/
 	return;
 }
-/* Function for calculating VM, V, and WM at point (i,j) in the order . Calculation of V at (i,j) requires VBI and VM. Also, calculation of final value of WM(i,j) requires V at (i,j) */
-
+/* Función para calcular WM, V y WM en un punto (i,j). El calculo de V requiere VBI y WM, además el calculo de WM requiere V */
 void calcVMVWM(int i, int j) {
-	int a = multConst[0] /*offset penalty for multiloops*/, b = multConst[2]/*penalty per branch for multiloops*/, c = multConst[1]/* Penalty per single base in the multiloop*/, a1, h, es;
+	int a = multConst[0] /*penalidad para los multiloops*/, 
+	b = multConst[2]/*penalidad por rama para los multiloops*/, 
+	c = multConst[1]/* Penalidad por base singular para los multiloops*/, a1, h, es;
 	int aupen;
 	int WMijp, WMidjd, WMidj, WMijd, WMij;
 	int VMij, VMijd, VMidj, VMidjd, A_temp;
-	int WMip1hm1 /* WM value at i+1 and j-1 */,
-	WMip2hm1/* WM value at i+2 and h-1*/,
-	WMhjm1/* WM value at h and j-1*/, WMhjm2/* WM value at h and j-2*/,
-	WMhp1j /*WM value at h+1 and j*/;
+	int WMip1hm1 /* Valor de WM con i+1 y j-1 */,
+	WMip2hm1 /* Valor de WM con i+2 y h-1*/,
+	WMhjm1/* Valor de WM en h con j-1*/, WMhjm2/* Valor de WM en h con j-2*/,
+	WMhp1j /*Valor de WM en h+1 con j*/;
 	int rnai, rnaj;
 	int tmp1, tmp2;
 	rnai = RNA[i];
@@ -508,24 +516,26 @@ void calcVMVWM(int i, int j) {
 	WMidj = INFINITY_;
 	WMijd = INFINITY_;
 	WMij = INFINITY_;
-	/* VM and WM starts */
-	aupen = auPen(rnai, rnaj); /* AU or NON GC penalty for base pair (i,j) */
+	/* VM y WM inician */
+	aupen = auPen(rnai, rnaj); /* penalidad para el par de bases (i,j) que sea AU o no GC */
 	VMij = INFINITY_;
 	VMijd = INFINITY_;
 	VMidj = INFINITY_;
 	VMidjd = INFINITY_;
-	/* Manoj starts */
 	WMijp = WM[i][i + 4] + WM(i+5,j);
 	a1 = WM[i][i + 5] + WM(i+6,j);
 	if (a1 <= WMijp)
 		WMijp = a1;
-	/* Here we are doing the calculation of VM and WM at point (i,j) concurrently. This for loop calculates the values of VMij, VMidj, VMijd, VMidjd with the value of WMijp. The value of WMijp is needed for calculating the value of WM at (i,j). However, it should be noted that the final value of WM[i][j] requires value of V at (i,j) and will be calculated in the end. */
-	/* There are four possibilities for the multiloop closing base pair for the inclusion of dangling energies.
-	 * 1) Including the dangling energy of i+1 base and also for base j-1 with the base pair (i,j) closing the multiloop - VMidjd
-	 * 2) Including the danlging energy of i+1 base and NOT including the dangling energy of base j-1 with the closing base pair (i,j) - VMidj
-	 * 3) NOT including the danlging energy of i+1 base and including the dangling energy of base j-1 with the closing base pair (i,j) - VMijd
-	 * 4) NOT including the danlging energy of i+1 base and NOT including the dangling energy of base j-1 with the closing base pair (i,j)-VMij
-	 * */
+	/* Aquí se hace el calculo de VM y WM en (i,j) concurrentemente 
+	. Este for calcula los valores de VMij, VMidj, VMidjd usando WMijp.
+	El valor de WMijp es necesitado para calcular el valor de WM en (i,j). De cualquier forma, debiera ser notado
+	que el valor final de WM[i][j] requiere de V en (i,j) y es calculado al final 
+	*/
+	/* Hay 4 posibilidades para el multiloop cerrando el par de bases relacionado con la inclusion de energias colgantes */
+	/* 1)Incluyendo la energia colgante de la base i+1 y de la base j-1 con el par de bases (i,j) cerrando el multiloop - WMidjd
+	   2)Incluyendo la energia colgante de la base i+1 y no la de la base j-1 con el par de bases (i,j) cerrando el multiloop - WMidj
+	   3)No Incluyendo la energia colgante de la base i+1 y si la de la base j-1 con el par de bases (i,j) cerrando el multiloop - WMijd	 
+	   4)No Incluyendo la energia colgante de la base i+1 y tampoco la de la base j-1 con el par de bases (i,j) cerrando el multiloop - WMij */
 	for (h = i + 6; h <= j - 5; h++) {
 		a1 = WM[i][h];
 		WMip1hm1 = WM[i + 1][h - 1];
@@ -535,16 +545,19 @@ void calcVMVWM(int i, int j) {
 		WMhjm2 = WM[h][j-2];
 		WMhp1j = WM[h+1][j];
 #else
-		WMhjm1 = WM(h,j-1); /* Preprocessor will convert this into WM[j-1][h]. According to the algorithm, the expression should be WM[h][j-1]  -- in which case, as the value of h changes, this will access elements from a column of the WM matrix. To improve run time performance WM array is made symmetric and so WM[h][j-1] = WM[j-1][h] and it will have accesses in a row.*/
-		WMhjm2 = WM(h,j-2); /* Same reason as above */
-		WMhp1j = WM(h+1,j); /* Same reason as above */
+		WMhjm1 = WM(h,j-1); /* El preprocesador convertirá esto en WM[j-1][h]. De acuerdo al algoritmo
+		  la expresion debiera ser WM[h][j-1], en ese caso como el valor de h cambia, esto permitirá acceder
+		  a elementos de una columna de la matriz WM. Para mejorar tiempo de ejecución la matriz WM se hace
+		  simétrica, demanera que WM[h][j-1] = WM[j-1][h] y entonces tendra accesos en una fila  */ 
+		WMhjm2 = WM(h,j-2); 
+		WMhp1j = WM(h+1,j); 
 #endif
-		/* WM starts */
+		/* WM inicia */
 		a1 += WMhp1j;
 		if (a1 <= WMijp)
 			WMijp = a1;
-		/* WM ends */
-		/* Calculation of the four options for VM*/
+		/* WM finaliza */
+		/* Calculo de las 4 opciones para VM*/
 		A_temp = WMip1hm1 + WMhjm1;
 		if ((A_temp <= VMij))
 			VMij = A_temp;
@@ -564,21 +577,20 @@ void calcVMVWM(int i, int j) {
 	VMijd += dangle[rnai][rnaj][RNA[j-1]][1];
 	VMidjd += dangle[rnai][rnaj][RNA[i+1]][0] + dangle[rnai][rnaj][RNA[j-1]][1];
 #else
-	tmp1 = dangle[rnai][rnaj][RNA[i + 1]][0]; /* Dangling energy of base pair (i,j) with single base i+1 at 5' end */
-	tmp2 = dangle[rnai][rnaj][RNA[j - 1]][1]; /* Dangling energy of base pair (i,j) with single base j-1 at 3' end */
+	tmp1 = dangle[rnai][rnaj][RNA[i + 1]][0]; /* energia colgante del par de bases (i,j) con una base singular i+1 en el final 5' */ 
+	tmp2 = dangle[rnai][rnaj][RNA[j - 1]][1]; /* energia colgante del par de bases (i,j) con una base singular i+1 en el final 5' */
 	VMidj += (tmp1 + c);
 	VMidjd += (tmp1 + c);
 	VMijd += (tmp2 + c);
 	VMidjd += (tmp2 + c);
 #endif
-	/* Manoj ends */
 	VMij = MIN(MIN(VMij, VMidj), MIN(VMijd, VMidjd));
 	VMij = VMij + b + a + aupen;
 	if ((constraints[i] > 0 && constraints[i] != j) || (constraints[j] > 0 && constraints[j] != i) || constraints[i] == -1 || constraints[j] == -1)
 		VMij = INFINITY_;
 	VM[i][j] = VMij;
-	/* VM ends */
-	/* V starts */
+	/* VM finaliza */
+	/* V inicia */
 	es = eS(i, j);
 	if (es == 0) {
 		es = INFINITY_;
@@ -590,10 +602,10 @@ void calcVMVWM(int i, int j) {
 		Vij = INFINITY_;
 	V[indx[i] + j] = Vij;
 	if (NOISOLATE == TRUE && Vij < INFINITY_) {
-		//Check if i+1,j-1 have paired
+		//Se revisa si i+1, j-1 estan pareadas
 		if (V[indx[i + 1] + j - 1] > INFINITY_ - SMALLINFTY_) {
-			//If not then check for i-1, j+1
-			//Isolated base pairs look ahead
+			//si no lo están se revisa por i-1,j+1
+			//los pares de bases isolados se ven mas adelante 
 			int eHL = eH(i - 1, j + 1);
 			int eSL = eS(i - 1, j + 1) + V[indx[i] + j];
 			if (i - 1 == 0) {
@@ -602,7 +614,7 @@ void calcVMVWM(int i, int j) {
 			}
 			int Vijl = (eHL < eSL) ? eHL : eSL;
 			if (Vijl > INFINITY_ - SMALLINFTY_)
-				//isolated base pair found.. setting energy to infinity
+				//par de bases isoladas encontrada, se setea la energía a infinito
 				V[indx[i] + j] = Vij = INFINITY_;
 		}
 	}
@@ -611,9 +623,9 @@ void calcVMVWM(int i, int j) {
 	if (indx[i]+j > (LENGTH-1)*(LENGTH)/2)
 		printf("ERROR: En calcVBIVMVWM: i: %5d  j: %5d\n",i,j);
 #endif
-	/* V ends */
-	/* WM starts */
-	//Need to take care of these WMs
+	/* V finaliza */
+	/* WM inicia */
+	//Se trabaja sobre los WMs
 	WMij = Vij + auPen(rnai, rnaj) + b;
 	if (constraints[i] <= 0)
 		WMidj = V[indx[i + 1] + j] + dangle[rnaj][RNA[i + 1]][rnai][1] + auPen(
@@ -633,26 +645,27 @@ void calcVMVWM(int i, int j) {
 		WMsijm1 = WM[i][j - 1];
 	WMij = MIN(MIN(WMsip1j + c, WMsijm1 + c), WMij);
 	WM[i][j] = MIN(WMijp, WMij);
-	WM(i,j) = WM[i][j]; /* extra instruction */
-	/* WM ends */
+	WM(i,j) = WM[i][j]; 
+	/* WM finaliza */
 	return;
 }
 
-/* Calculation of VBI, VM, V and WM in the order. Calculation of V at (i,j) requires VBI and VM. Also, calculation of final value of WM(i,j) requires V at (i,j) */
+/* Calculo de VBI, VM V y WM. El calculo de V en (i,j) requiere VBI y VM. Además, el calculo del valor final
+   de WM(i,j) requiere V en (i,j)  */
 void calcVBIVMVWM(int i, int j) {
 	int ip, jp, temp, VBIij, thres1;
 	int
-	a = multConst[0] /*a is an offset penalty for multiloops */,
-	b = multConst[2]/* b is penalty for multiloop branches, one per branch*/,
-	c = multConst[1] /*Penalty for single stranded nucleotides in the multiloops*/,
+	a = multConst[0] /* a es una penalidad para multiloops  */,
+	b = multConst[2]/* b es una penalidad para las ramas de multiloops, una por rama  */,
+	c = multConst[1] /* c es una penalidad para nucleotidos monocaterianos en los multiloops  */,
 	a1, h, es;
 	int aupen;
 	int WMijp, WMidjd, WMidj, WMijd, WMij;
 	int VMij, VMijd, VMidj, VMidjd, A_temp;
-	int WMip1hm1 /* WM value at i+1 and h-1 */,
-	WMip2hm1 /* WM value at i+2 and j-1*/,
-	WMhjm1 /*WM value at h and j-1*/,
-	WMhjm2 /* WM value at h and j-2*/, WMhp1j /*WM value at h+1 and j*/;
+	int WMip1hm1 /* Valor de WM en i+1 y h-1 */,
+	WMip2hm1 /* Valor de WM en i+2 y j-1*/,
+	WMhjm1 /* Valor de WM en h y j-1*/,
+	WMhjm2 /* Valor de WM en h y j-2*/, WMhp1j /*Valor de WM en h+1 y j*/;
 	int rnai, rnaj;
 	int tmp1, tmp2;
 	rnai = RNA[i];
@@ -661,18 +674,18 @@ void calcVBIVMVWM(int i, int j) {
 	WMidj = INFINITY_;
 	WMijd = INFINITY_;
 	WMij = INFINITY_;
-	/* VBI starts */
-	/* Look at the calcVBI function for explanation of internal loop calculations*/
+	/* VBI inicia */
 	VBIij = INFINITY_;
 	int ifinal, jfinal;
-	/* ip=i+1, jp=j-1 closes a stack, so we should set the jp limit till j-2, in the following loop*/
+	/* ip=i+1, jp=j-1 cierran un stack, por lo que el limite de jp se define como j-1 en el siguiente loop  */
 	ip = i + 1;
-	thres1 = MAX((j - 1) + (ip - i - 1) - MAXLOOP, ip + 4); /* Minimum size of a hairpin loop is 3. So, start jp from ip+4 */
+	thres1 = MAX((j - 1) + (ip - i - 1) - MAXLOOP, ip + 4); /* El tamaño minimo de un loop de horquilla es 3. Por ello, jp inicia de ip+4  */
 	for (jp = thres1; jp <= j - 2; jp++) {
 		if (chPair(RNA[ip], RNA[jp])) {
 			if (checkSS(i, ip) || checkSS(jp, j))
 				continue;
-			temp = eL(i, j, ip, jp) + V[indx[ip] + jp]; /* Energy of internal loop closed by (i,j) and (ip,jp) + the energy of structure closed by (ip, jp)*/
+			temp = eL(i, j, ip, jp) + V[indx[ip] + jp]; /* Energia de un loop interno cerrado por (i,j)  
+			 y (ip,jp) + la energia de la estructura cerrada por (ip,jp)  */ 
 			if (VBIij > temp) {
 				VBIij = temp;
 				ifinal = ip;
@@ -698,22 +711,20 @@ void calcVBIVMVWM(int i, int j) {
 	if ((constraints[i] > 0 && constraints[i] != j) || (constraints[j] > 0 && constraints[j] != i) || constraints[i] == -1 || constraints[j] == -1)
 		VBIij = INFINITY_;
 	VBI[i][j] = VBIij;
-	/* VBI ends */
-	/* VM and WM starts */
+	/* VBI finaliza */
+	/* VM and WM inician */
 	aupen = auPen(rnai, rnaj);
-	/* Here we are doing the calculation of VM and WM at point (i,j) concurrently. The following for loop calculates the values of VMij, VMidj, VMijd, VMidjd with the value of WMijp. The value of WMijp is needed for calculating the value of WM at (i,j). However, it should be noted that the final value of WM[i][j] requires value of V at (i,j) which itself require VM(i,j), and will be calculated in the end. */
-	/* There are four possibilities for the multiloop closing base pair for the inclusion of dangling energies.
-	 * 1) Including the dangling energy of i+1 base and also for base j-1 with the base pair (i,j) closing the multiloop - VMidjd
-	 * 2) Including the danlging energy of i+1 base and NOT including the dangling energy of base j-1 with the closing base pair (i,j) - VMidj
-	 * 3) NOT including the danlging energy of i+1 base and including the dangling energy of base j-1 with the closing base pair (i,j) - VMijd
-	 * 4) NOT including the danlging energy of i+1 base and NOT including the dangling energy of base j-1 with the closing base pair (i,j)-VMij
-	 * */
+	/* Hay 4 posibilidades para el multiloop cerrando el par de bases relacionado con la inclusion de energias colgantes */
+	/* 1)Incluyendo la energia colgante de la base i+1 y de la base j-1 con el par de bases (i,j) cerrando el multiloop - WMidjd
+	   2)Incluyendo la energia colgante de la base i+1 y no la de la base j-1 con el par de bases (i,j) cerrando el multiloop - WMidj
+	   3)No Incluyendo la energia colgante de la base i+1 y si la de la base j-1 con el par de bases (i,j) cerrando el multiloop - WMijd	 
+	   4)No Incluyendo la energia colgante de la base i+1 y tampoco la de la base j-1 con el par de bases (i,j) cerrando el multiloop - WMij */
+
 	VMij = INFINITY_;
 	VMijd = INFINITY_;
 	VMidj = INFINITY_;
 	VMidjd = INFINITY_;
-	/* Manoj starts */
-	/* Merged calculations of WM(i,j) and VM(i,j)*/
+	/* Calculos combinados de WM(i,j) y VM(i,j)  */
 	WMijp = WM[i][i + 4] + WM(i+5,j);
 	a1 = WM[i][i + 5] + WM(i+6,j);
 	if (a1 <= WMijp)
@@ -731,7 +742,7 @@ void calcVBIVMVWM(int i, int j) {
 		WMhjm2 = WM(h,j-2);
 		WMhp1j = WM(h+1,j);
 #endif
-		/* WM starts */
+		/* WM inicia */
 		a1 += WMhp1j;
 		if (a1 <= WMijp)
 			WMijp = a1;
@@ -762,15 +773,14 @@ void calcVBIVMVWM(int i, int j) {
 	VMijd += tmp2;
 	VMidjd += tmp2;
 #endif
-	/* Manoj ends */
 	VMij = MIN(MIN(VMij, VMidj), MIN(VMijd, VMidjd));
 	VMij = VMij + b + a;
 	VMij += aupen;
 	if ((constraints[i] > 0 && constraints[i] != j) || (constraints[j] > 0 && constraints[j] != i) || constraints[i] == -1 || constraints[j] == -1)
 		VMij = INFINITY_;
 	VM[i][j] = VMij;
-	es = eS(i, j); /* Energy of stack closed with (i,j) and (i+1,j-1)*/
-	if (es == 0) { /* Amrita: I don't know, if this statement is necessary. NOT DONE BY ME. */
+	es = eS(i, j); /* Energía de un stack cerrado con (i,j) y (i+1, j-1)*/
+	if (es == 0) { 
 		es = INFINITY_;
 	} else
 		es += V[indx[i + 1] + j - 1];
@@ -797,23 +807,24 @@ void calcVBIVMVWM(int i, int j) {
 	if (indx[i]+j > (LENGTH-1)*(LENGTH)/2)
 		printf("ERROR: En calcVBIVMVWM: i: %5d  j: %5d\n",i,j);
 #endif
-	/* V ends */
-	/* WM starts */
-	/* No dangling base on any of the side */
+	/* V finaliza */
+	/* WM inicia */
+	/* No hay base colgante en ningun lado */
 	WMij = V[indx[i] + j] + aupen + b;
-	/* Dangling base i on 3' end of the base pair (i+1,j) */
+	/* Base colgante i en el final 3'del par de bases (i+1,j) */
 	if (constraints[i] <= 0)
 		WMidj = V[indx[i + 1] + j] + dangle[rnaj][RNA[i + 1]][rnai][1] + auPen(RNA[i + 1], rnaj) + b + c;
-	/* Dangling base j on 5' end of the base pair (i,j-1)*/
+	/* Base colgante j en el final 5' del par de bases (i,j-1)  */
 	if (constraints[j] <= 0)
 		WMijd = V[indx[i] + j - 1] + dangle[RNA[j - 1]][rnai][rnaj][0] + auPen(rnai, RNA[j - 1]) + b + c;
-	/* Dangling base i on the 3' end and base j on the 5' end of the base pair (i+1,j-1)*/
+	/* Base colgante ien el final 3' y base j en el final 5' del par de bases (i+1, j-1)  */  
 	if (constraints[i] <= 0 && constraints[j] <= 0)
 		WMidjd = V[indx[i + 1] + j - 1] + dangle[RNA[j - 1]][RNA[i + 1]][rnai][1] + dangle[RNA[j - 1]][RNA[i + 1]][rnaj][0] + auPen(RNA[i + 1], RNA[j - 1]) + b + 2* c ;
 	WMij = MIN(MIN(WMij, WMidj), MIN(WMijd, WMidjd));
-	/* Term WM[i+1][j] takes care of the option when base i is neither pairing up nor playing the role in the dangling energy calculation and we have to add penalty 'c' for base i to remain single.
-	 * Term WM[i][j-1] takes care of the option when base j is neither pairing up nor playing the role in the dangling energy calculations and add penalty 'c' for base j to remain single.
-	 * */
+	/* El termino WM[i+1][j] se encarga cuando la base i no se parea o no esta cumpliendo el rol de calcular
+	   la energía colgante y se debe agregar la penalidad c para que la base i se mantenga singular */
+	/* El termino WM[i][j-1] se encarga cuando la base j no se parea o no esta cumpliendo el rol de calcular
+	   la energía colgante y se debe agregar la penalidad c para que la base j se mantenga singular */
 	int WMsip1j = INFINITY_;
 	int WMsijm1 = INFINITY_;
 	if (constraints[i] <= 0)
@@ -822,19 +833,18 @@ void calcVBIVMVWM(int i, int j) {
 		WMsijm1 = WM[i][j - 1];
 	WMij = MIN(MIN(WMsip1j + c, WMsijm1 + c), WMij);
 	WM[i][j] = MIN(WMijp, WMij);
-	WM(i,j) = WM[i][j]; /* extra instruction */
-	/* WM ends */
+	WM(i,j) = WM[i][j]; 
+	/* WM finaliza */
 	return;
 }
-
-//problems in this function.. i think this should fix it..
-/* Function to calculate the value of W[j]. */
+///
+/* Función para calcular el valor de W[j] */
 void calcW(int j) {
 	int i;
-	int Wj, Widjd /*Dangling base on both sides*/,
-		Wijd/* Dangling base on jth side.*/,
-		Widj/* Dangling base on ith side */,
-		Wij/* No dangle base on any of the sides */, Wim1 /* Value of W at (i-1). Set to zero if positive*/;
+	int Wj, Widjd /* Base colgante en amos lados */,
+		Wijd/* Base colgante en el j-esimo lado.*/,
+		Widj/* Base colgante en el i-esimo lado */,
+		Wij/* Sin bases colgantes en ningun lado */, Wim1 /* Valor de W en (i-1). Se setea en cero si es positivo*/;
 	int rnai, rnaj;
 	int must_branch = 0, besti = 0;
 	Wj = INFINITY_;
@@ -845,23 +855,26 @@ void calcW(int j) {
 		Wim1=W[i-1];
 #endif
 #if 1
-		Wim1 = MIN(0, W[i - 1]); /* If W[i-1] >=0, this means that there is a branch contained in the sequence from 1 to i-1. Otherwise W[i-1] will be INFINITY. Here Wim1 is defined in this manner, to make the energy of unfolded sequence as INFINITY. */
+		Wim1 = MIN(0, W[i - 1]);/* Si W[i-1]>=0, esto significa que hay una rama contenida en secuencia
+		que va de 1 hasta i-1. En cualquier otro caso W[i-1] será infinito. Aquí Wim1 está definido de esta
+		manera, para hacer que la enrgía de una secuencia sin plegar sea infinito*/ 
+		
 #endif
 		//Wim1 = W[i - 1];
 		rnai = RNA[i];
-		/* SH: Calculate the energy with no dangle bases. */
+		/* Se calcula la energía sin bases colgantes  */
 		Wij = V[indx[i] + j] + auPen(rnai, rnaj) + Wim1;
-		/* Dangle on both sides of the base pair (i+1,j-1). Add the corresponding energy. */
+		/* Se cuelga en ambos lados del par de bases (i+1,j-1). Se agrega la energía correspondiente  */
 		if (constraints[i] <= 0 && constraints[j] <= 0)
 			Widjd = V[indx[i + 1] + j - 1] + auPen(RNA[i + 1], RNA[j - 1]) + dangle[RNA[j - 1]][RNA[i + 1]][rnai][1] + dangle[RNA[j- 1]][RNA[i + 1]][rnaj][0] + Wim1;
-		/* Single base j dangling on the 5' end of base pair (i,j-1) */
+		/* Base singular j colgando en el final 5' del par de bases (i,j-1) */
 		if (constraints[j] <= 0)
 			Wijd = V[indx[i] + j - 1] + auPen(rnai, RNA[j - 1]) + dangle[RNA[j- 1]][rnai][rnaj][0] + Wim1;
-		/* Single base i dangling on the 3' end of base pair (i+1,j)  */
+		/* Base singular i colgando en el final 3' del par de bases (i+1,j) */
 		if (constraints[i] <= 0)
 			Widj = V[indx[i + 1] + j] + auPen(RNA[i + 1], rnaj) + dangle[rnaj][RNA[i + 1]][rnai][1] + Wim1;
 		int tmpWj = Wj;
-		Wj = MIN(MIN(MIN(Wij, Widjd), MIN(Wijd, Widj)), Wj); /* Take the minimum */
+		Wj = MIN(MIN(MIN(Wij, Widjd), MIN(Wijd, Widj)), Wj); /* Se toma el mínimo */
 		if (tmpWj != Wj) {
 			must_branch = 0;
 			besti = i;
@@ -886,7 +899,7 @@ void calcW(int j) {
 			}
 		}
 	}
-	/* If jth base is not contributing in the energy calculation of W[j] */
+	/* Si la j-esima base no esta contribuyendo en el calculo de energía de W[j]*/
 	if (!must_branch) {
 		if (Wj > W[j - 1])
 			Wj = W[j - 1];
@@ -895,92 +908,84 @@ void calcW(int j) {
 	return;
 }
 
-/* For details on calculating energy of different types of Internal loops, please look at the chapter 3 of MS thesis of Mirela Stefania Andronescu.
- * http://www.cs.ubc.ca/grads/resources/thesis/Nov03/Mirela_Andronescu.pdf
- * */
-/* Calculates the energy of internal loop with (i,j) as closing base pair and (ip,jp) as enclosed base pair */
+/* Se calcula el valor de energía del loop interno con (i,j) como par de bases cerrando y (ip,jp) como par de
+bases encerrado*/
 int eL(int i, int j, int ip, int jp) {
 	int energy;
 	int size1, size2, size;
-	int loginc; /* SH: Originally unassiged, but needs to be set to 0 so it doesn't throw off later calculations. */
-	int lopsided; /* define the asymmetry of an interior loop */
+	int loginc; 
+	int lopsided; /* Define la asimetría de un loop interior */
 	energy = INFINITY_;
 	loginc = 0;
-	/*SH: These calculations used to incorrectly be within the bulge loop code, moved out here. */
 	size1 = ip - i - 1;
 	size2 = j - jp - 1;
 	size = size1 + size2;
 	if (size1 == 0 || size2 == 0) {
 		if (size > 30) {
-			/* AM: Does not depend upon i and j and ip and jp - Stacking Energies */
+			/*  No depende de i,j,ip o jp */
 			loginc = (int) floor(prelog * log((double) size / 30.0));
 			energy = bulge[30] + eparam[2] + loginc + auPen(RNA[i], RNA[j]) + auPen(RNA[ip], RNA[jp]);
 		} else if (size <= 30 && size != 1) {
-			/* Does not depend upon i and j and ip and jp - Stacking Energies  */
+			/*  No depende de i,j,ip o jp */
 			energy = bulge[size] + eparam[2];
 			energy += auPen(RNA[i], RNA[j]) + auPen(RNA[ip], RNA[jp]);
 		} else if (size == 1) {
 			energy = stack[fourBaseIndex(RNA[i], RNA[j], RNA[ip], RNA[jp])] + bulge[size] + eparam[2]; /* mans */
 		}
 	} else {
-		/* Internal loop */
+		/* Loop interno */
 		lopsided = abs(size1 - size2);
 		if (size > 30) {
 			loginc = (int) floor(prelog * log((double) size / 30.0));
-			/* Please check what should be the difference in the following two options. Is it correct?*/
-			if (!((size1 == 1 || size2 == 1) && gail)) { /* normal internal loop with size > 30*/
+			if (!((size1 == 1 || size2 == 1) && gail)) { /* Loop interno normal con tamaño >30*/
 				energy = tstki[fourBaseIndex(RNA[i], RNA[j], RNA[i + 1], RNA[j- 1])] + tstki[fourBaseIndex(RNA[jp], RNA[ip], RNA[jp+ 1], RNA[ip - 1])] + inter[30] + loginc + eparam[3]+ MIN(maxpen, (lopsided * poppen[MIN(2, MIN(size1,size2))]));
-			} else { /* if size is more than 30 and it is a grossely asymmetric internal loop and gail is not zero*/
+			} else { 
 				energy = tstki[fourBaseIndex(RNA[i], RNA[j], BASE_A, BASE_A)] + tstki[fourBaseIndex(RNA[jp], RNA[ip], BASE_A, BASE_A)] + inter[30] + loginc + eparam[3] + MIN(maxpen, (lopsided	* poppen[MIN(2, MIN(size1, size2))]));
 			}
 		}
-		/* if size is not > 30, we have a looooot of cases... */
+		/* si el tamaño no es mayor a 30 se generan muchos casos */
 		else if (size1 == 2 && size2 == 2) {
-			/* 2x2 internal loop */
+			/* loop interno de 2x2 */
 			energy = iloop22[RNA[i]][RNA[ip]][RNA[j]][RNA[jp]][RNA[i + 1]][RNA[i+ 2]][RNA[j - 1]][RNA[j - 2]];
 		} else if (size1 == 1 && size2 == 2) {
 			energy = iloop21[RNA[i]][RNA[j]][RNA[i + 1]][RNA[j - 1]][RNA[j - 2]][RNA[ip]][RNA[jp]];
 		} else if (size1 == 2 && size2 == 1) {
-			/* 1x2 internal loop */
+			/* Loop interno de 1x2 */
 			energy = iloop21[RNA[jp]][RNA[ip]][RNA[j - 1]][RNA[i + 2]][RNA[i+1]][RNA[j]][RNA[i]];
 		} else if (size == 2) {
-			/* 1*1 internal loops */
+			/* Loop interno de 1x1*/
 			energy = iloop11[RNA[i]][RNA[i + 1]][RNA[ip]][RNA[j]][RNA[j - 1]][RNA[jp]];
-		} else if ((size1 == 1 || size2 == 1) && gail) { /* gail = (Grossly Asymmetric Interior Loop Rule) (on/off <-> 1/0)  */
+		} else if ((size1 == 1 || size2 == 1) && gail) { 
 			energy = tstki[fourBaseIndex(RNA[i], RNA[j], BASE_A, BASE_A)] + tstki[fourBaseIndex(RNA[jp], RNA[ip], BASE_A, BASE_A)] + inter[size] + loginc + eparam[3] + MIN(maxpen, (lopsided * poppen[MIN(2, MIN(size1, size2))]));
-		} else { /* General Internal loops */
+		} else { 
 			energy = tstki[fourBaseIndex(RNA[i], RNA[j], RNA[i + 1], RNA[j - 1])] + tstki[fourBaseIndex(RNA[jp], RNA[ip], RNA[jp + 1], RNA[ip - 1])] + inter[size] + loginc + eparam[3] + MIN(maxpen, (lopsided * poppen[MIN(2, MIN(size1, size2))]));
 		}
 	}
 	return energy;
 }
 
-/* For details on calculating energy of different types of hairpin loops, please look at the chapter 3 of MS thesis of Mirela Stefania Andronescu.
- * http://www.cs.ubc.ca/grads/resources/thesis/Nov03/Mirela_Andronescu.pdf
- * */
-/* SH: Function used to calculate energy of a hairpin loop between i & j. */
-/* inline */
+/* Funcion usada para calcular la energia de un loop de horquilla entre i & j*/
 int eH(int i, int j) {
-	/*  Hairpin loop for all the bases between i and j */
-	/*  size for size of the loop, energy is the result, loginc is for the extrapolation for loops bigger than 30 */
+	/*  Loop de horquilla para todas las bases entre i y j*/
+	/*  size es el tamaño del loop, energy es el resultado, loginc es para la extrapolacion de loops mayores a 30*/
 	int size;
 	int loginc;
 	int energy = INFINITY_;
 	int key, index, count, tlink, kmult;
-	size = j - i - 1; /*  size is the number of bases in the loop, when the closing pair is excluded */
-	//checking if single stranded region is allowed with given constraints
+	size = j - i - 1; //size es el numero de bases en el loop cuando el par que cierra es excluido 
+	//se verifica so la region monocateriana esta permitida con las constantes dadas
 	if (checkSS(i, j) || (constraints[i] > 0 && constraints[i] != j)
 			|| (constraints[j] > 0 && constraints[j] != i))
 		return energy;
-	/*  look in hairpin, and be careful that there is only 30 values */
+	/* Se ve en hairpin el valor correcto de los 30 presentes*/
 	if (size > 30) {
 		loginc = (int) ((prelog) * log(((double) size) / 30.0));
 		energy = hairpin[30] + loginc + tstkh[fourBaseIndex(RNA[i], RNA[j],
-				RNA[i + 1], RNA[j - 1])] + eparam[4]; /* size penalty + terminal mismatch stacking energy*/
+				RNA[i + 1], RNA[j - 1])] + eparam[4]; /* Penalidad de tamaño + energia de stacking incompatible*/
 	}
 	else if (size <= 30 && size > 4) {
 		energy = hairpin[size] + tstkh[fourBaseIndex(RNA[i], RNA[j],
-				RNA[i + 1], RNA[j - 1])] + eparam[4]; /* size penalty + terminal mismatch stacking energy*/
+				RNA[i + 1], RNA[j - 1])] + eparam[4]; /* Penalidad de tamaño + energia de stacking incompatible*/
 	}
 	else if (size == 4) {
 		/*  tetraloop */
@@ -1006,7 +1011,7 @@ int eH(int i, int j) {
 			}
 			key += kmult * (int) pow(10.0, 5 - index);
 		}
-		/*  if the sequence is in tloop, we use this value */
+		/* Si la secuencia está en el tetraloop se usa este valor*/
 		for (count = 1; count < numoftloops && tlink == 0; ++count) {
 			if (key == tloop[count][0]) {
 				tlink = tloop[count][1];
@@ -1016,34 +1021,26 @@ int eH(int i, int j) {
 				RNA[i + 1], RNA[j - 1])] + eparam[4];
 	}
 	else if (size == 3) {
-		/*  triloop... For the moment, the file triloop.dat is empty */
-		/*  else, should have a treatment like the one if size==4 */
 		energy = hairpin[size];
-		/* AM: Don't include stacking energy terms for triloopls */
-		/* + tstkh[RNA[i]][RNA[j]][RNA[i+1]][RNA[j-1]]  */
-		/* + eparam[4]; */
-		/*  Must be another penalty for terminal AU... Not sure of this */
 		energy += auPen(RNA[i], RNA[j]);
 	}
 	else if (size < 3 && size != 0) {
-		/*  no terminal mismatch */
+		/*  Sin incopatibilidad terminal */
 		energy = hairpin[size] + eparam[4];
 		if ((RNA[i] == BASE_A && RNA[j] == BASE_U) || (RNA[i] == BASE_U
 				&& RNA[j] == BASE_A)) {
-			energy += 6; /*  Seems to be a penalty for terminal AU.  *//* Hairpin Loops of size 3 are not allowed, the term hairpin[size] will result in a very large value.  */
+			energy += 6; 
+			/* Loops de horquilla de tamaño 3 no son permitidos*/
 		}
 	} else if (size == 0)
 		return INFINITY_;
-	/*  GGG Bonus => GU closure preceded by GG */
 	/*  i-2 = i-1 = i = G, and j = U; i < j */
 	if (i > 2) {
 		if (RNA[i - 2] == BASE_G && RNA[i - 1] == BASE_G && RNA[i] == BASE_G
 				&& RNA[j] == BASE_U) {
 			energy += gubonus;
-			/*  printf ("\n GGG bonus for i %d j %d ", i, j); */
 		}
 	}
-	/*  Poly-C loop => How many C are needed for being a poly-C loop */
 	tlink = 1;
 	for (index = 1; (index <= size) && (tlink == 1); ++index) {
 		if (RNA[i + index] != BASE_C)
@@ -1059,8 +1056,7 @@ int eH(int i, int j) {
 	return energy;
 }
 
-/* SH: Function used to calculate energy of stacked pairs (i.j) & (i+1.j-1). */
-/* inline */
+/* Función usada para calcular la energía de pares de stack (i,j) & (i+1,j-1)*/
 int eS(int i, int j) {
 	int energy;
 	if ((constraints[i] > 0 && constraints[i] != j) || (constraints[j] > 0

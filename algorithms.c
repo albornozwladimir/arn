@@ -177,32 +177,8 @@ int calculate(int len, int **forceList, int **prohibitList, int forcelen, int pr
 					calcWM(i, j); // Calcula el elemento WM en (i, j)
 			}
 		}
-	} else { // Si estamos ejecutando con ILSA - algoritmo de aceleración de bucle interno
-		for (b = 7; b <= 10; b++) {
-		#pragma omp parallel for private (i,j) schedule(guided)
-			for (i = 1; i <= len - b; i++) {
-				j = i + b;
-				calcVBIS(i, j); // Calcula la matriz VBI [i] [j] con el algoritmo de aceleración de bucle interno (ILSA)
-				if (chPair(RNA[i], RNA[j])) {
-					calcVWM(i, j, VBI[i][j], INFINITY_); // Calcula el elemento V y WM en (i, j)
-				} else {
-					calcWM(i, j);
-				}
-			}
-		}
-		for (b = 11; b <= len - 1; b++) {
-		#pragma omp parallel for private (i,j) schedule(guided)
-			for (i = 1; i <= len - b; i++) {
-				j = i + b;
-				calcVBIS(i, j); // Cálculo de la matriz VBI en (i, j) - Hecho en ambos casos si (i, j) se agrupa o no
-				if (chPair(RNA[i], RNA[j])) {
-					calcVMVWM(i, j); // Cálculo de WM, V, WM en orden en (i, j)
-				} else
-					calcWM(i, j); // Cálculo de WM en (i, j)
-			}
-		}
-	}         
-		for (j = 5; j <= len; j++) // La relación de recursión para la matriz W no depende de ninguna otra matriz, por lo que se puede hacer después de que el cálculo de otras matrices estén terminadas.
+	}          
+	for (j = 5; j <= len; j++) // La relación de recursión para la matriz W no depende de ninguna otra matriz, por lo que se puede hacer después de que el cálculo de otras matrices estén terminadas.
 			calcW(j);
 	return W[len];
 }   // Fin de la funcion que calcula

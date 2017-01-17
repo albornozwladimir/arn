@@ -167,7 +167,7 @@ int StrShuffle(string &s1, string s2)
  *  4) Las llamadas que calculan la función definida en algoritmos.c para rellenar las tablas de energía.
  *  */
 int main(int argc, char** argv) {
-	int i,i2,i3,i4;
+	int i;
 	ifstream cf;
 	int bases, largoseq=0;
 	string s, seq, s_random, segmento, copiaseg;
@@ -175,10 +175,10 @@ int main(int argc, char** argv) {
 	float energia;
 	double energy_random_prom,valor_extraido;
 	double energy_random_desv[1000];
-	double desv=0,desv1=0,desv2=0,desv3=0,desv4=0;
+	double desv=0;
 	double Z;
 	double t1;
-	cout <<  "Ingrese el largo de los segmentos: \n" ; 
+	//cout <<  "Ingrese el largo de los segmentos: \n" ; 
 	cin >> largoseq;
 	ILSA = FALSE;
 	NOISOLATE = FALSE;
@@ -187,38 +187,17 @@ int main(int argc, char** argv) {
 	i = 1;
 	while (i < argc) {
 		if (argv[i][0] == '-') {
-			if (strcmp(argv[i], "-ilsa") == 0) {
-				ILSA = TRUE;
-			} else if (strcmp(argv[i], "-noisolate") == 0) {
-				NOISOLATE = TRUE;
-			} else if (strcmp(argv[i], "-constraints") == 0) {
-				if (i < argc)
-					consIndex = ++i;
-			} else if (strcmp(argv[i], "-params")==0) { 
-				PARAMS = TRUE;			  
-				if (i < argc)
-					paramsIndex = ++i;
-			} else if (strcmp(argv[i], "-datadir") == 0) {
-				USERDATA = TRUE;
-				if (i < argc)
-					dataIndex = ++i;
-			} else if (strcmp(argv[i], "-limitCD") == 0)
-			{
-				if (i < argc)
+				if (i < argc){
 					lcdIndex = ++i;
+				
 			}
-		} else {
+		} 
+		else {
 			fileIndex = i;
 		}
 		i++;
 	}
 	cf.open(argv[fileIndex]);
-	if (cf != NULL)
-		printf("Archivo abierto.\n\n");
-	else {
-		printf("Error al abrir el archivo.\n\n");
-		exit(-1);
-	}
 	seq = "";
 	s = "";
 	//Para archivo tipo FASTA
@@ -239,12 +218,10 @@ int main(int argc, char** argv) {
 	}
 	s = seq;
 	bases = s.length();
-	cout << "Secuencia ingresada: " << s << endl;   // Se imprime la secuencia
-	cout << "Largo de la secuencia: " << bases <<endl; // Se imprime el largo de la secuencia
+	//cout << "Secuencia ingresada: " << s << endl;   // Se imprime la secuencia
+	//cout << "Largo de la secuencia: " << bases <<endl; // Se imprime el largo de la secuencia
 	cf.close();
-	int cuenta=0;
 	int cont=0;
-	string busq;
 	t1 = 0;
 	t1 = segundos();  // Se empieza a calcular el tiempo
 	for(int conts=0; cont <= bases; cont=cont+largoseq/2){
@@ -252,44 +229,31 @@ int main(int argc, char** argv) {
 		if(segmento.length() < largoseq){
 			segmento = s.substr(cont);
 		}
-		cout << "El segmento "<< cuenta << " es: " << segmento; 
+		//cout << "El segmento "<< cuenta << " es: " << segmento; 
 		copiaseg=segmento;
-		int bases2=segmento.length();
-		init_variables(bases2);
+		init_variables(largoseq);
 		int **fbp = NULL, **pbp = NULL;
 		int numfConstraints = 0, numpConstraints = 0;
-		if (handle_IUPAC_code(segmento, bases2)  == FAILURE)
+		if (handle_IUPAC_code(segmento, largoseq)  == FAILURE)
 		{
 			exit(0);
 		}	
-		if(USERDATA==TRUE)
-			populate(argv[dataIndex],true);
-		else if (PARAMS == TRUE)
-			populate(argv[paramsIndex],false);
-		else
-			populate("combinaciones",false); //Lectura de archivos termodinámicos
-		initTables(bases2); // Se inicializan variables globales de acuerdo a las bases de la secuencia
-		energy = calculate(bases2, fbp, pbp, 0, 0); /* Ejecuta el algoritmo de programación dinámica para calcular
+		populate("combinaciones",false); //Lectura de archivos termodinámicos
+		initTables(largoseq); // Se inicializan variables globales de acuerdo a las bases de la secuencia
+		energy = calculate(largoseq, fbp, pbp, 0, 0); /* Ejecuta el algoritmo de programación dinámica para calcular
 		 la energía óptima. Definido en el archivo algorithms.c*/
 	    energia = energy/100.00;
-	    cout << "\nEnergia minima libre: " << energia <<endl;
-		copiaseg = segmento;
+	    //cout << "\nEnergia minima libre: " << energia <<endl;
 		for (int i=0; i<1000; i++){
 			StrShuffle(copiaseg,segmento); // NO demora, no es necesario paralelizar
-			int bases2 = segmento.length();
-			init_variables(bases2);
-			if (handle_IUPAC_code(copiaseg, bases2)  == FAILURE) // Para el error
+			init_variables(largoseq);
+			if (handle_IUPAC_code(copiaseg, largoseq)  == FAILURE) // Para el error
 			{
 				exit(0);
 			}
-			if(USERDATA==TRUE)
-				populate(argv[dataIndex],true);
-			else if (PARAMS == TRUE)
-				populate(argv[paramsIndex],false);
-			else
-				populate("combinaciones",false);			
-			initTables(bases2);
-			valor_extraido = calculate(bases2, fbp, pbp, numfConstraints, numpConstraints);
+			populate("combinaciones",false);			
+			initTables(largoseq);
+			valor_extraido = calculate(largoseq, fbp, pbp, numfConstraints, numpConstraints);
 			energy_random_prom = valor_extraido + energy_random_prom; 
 			energy_random_desv[i] = valor_extraido/100.00;
 		}
@@ -299,14 +263,14 @@ int main(int argc, char** argv) {
 		}
 		desv = sqrt(desv/1000);
 		Z = (energia - (energy_random_prom))/desv;
+		cout <<conts;
 		printf("Valor-Z = %f\n", Z);
-		cuenta++;
 		conts++;
 		if(segmento.length() < largoseq){
 			cont = bases;
 		}
 		desv=0;
-		Z=0;
+		Z=0;																																															
 		energy_random_prom=0;
 	}
 	t1 = segundos() - t1; // Calculo de tiempo para la energia de la secuencia completa

@@ -363,9 +363,9 @@ int main(int argc, char** argv) {
 		populate("combinaciones",false);
 		pthread_create(&thread[h], &attribute, Funcion, (void *) data[h]);
 	}
+	pthread_attr_destroy(&attribute);
 	t1 = segundos() - t1; // Calculo de tiempo para la energia de la secuencia completa
 	cout << "El calculo del Z-Score para todos los segmentos demoro "<<t1<<" segundos"<<endl<<endl;
-	pthread_attr_destroy(&attribute); 
     for (i = 0; i < numthreads; i = i + 1)
         pthread_join(thread[i],&exit_status);
 	return 0;

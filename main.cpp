@@ -39,7 +39,7 @@ __thread int **VBI; // VBI(i,j) contendrá la energía del bucle interno óptimo
 __thread int **VM; // VM(i, j) contendrá la energía optima del multiloop cerrado con el par de bases (i,j)
 __thread int **WM; // Esta matriz se presenta para ayudar a los cálculos de multiloop. WM (i, j) contiene la energía óptima del segmento de cuerda de si a sj si esto forma parte de un multiloop
 __thread int *indx; // Esta matriz se utiliza para indexar V array. Aquí V matriz se asigna de 2D a 1D y indx matriz se utiliza para obtener la asignación de nuevo./*
-__thread ifstream *cf;
+__thread ifstream **cf;
 /*
 + El problema principal en la paralelizacion con pthread en este algoritmo, es que estas variables globales que se 
 + encuentran arriba son modificadas en todas las funciones que son parte de la funcion de calculo del valor de energía
@@ -233,13 +233,12 @@ void *Funcion(void *ptr){
 			energy_random_desv[i] = valor_extraido/100.00;
 		}
 		energy_random_prom = energy_random_prom/(100000);
-		for (int j=0; j<1000; j++){
-				desv = (energy_random_desv[j] - energy_random_prom)*(energy_random_desv[j] - energy_random_prom)+desv; 
-		}
+		for (int j=0; j<1000; j++)
+			desv = (energy_random_desv[j] - energy_random_prom)*(energy_random_desv[j] - energy_random_prom)+desv; 
 		desv = sqrt(desv/1000);
 		Z = (energia - (energy_random_prom))/desv;
 		//printf("Thread: %i  Valor-Z = %f\n",data->thread, Z);
-		cout << "En el segmento " << p  << " se tiene el valor Z " << Z <<endl;
+		cout << "En el segmento " << p  <<" : "<< segmento << " se tiene el valor Z " << Z <<endl;
 		//cout <<"\nPara "<< p << " comienzo "<<data->start << " y final "<<data->stop<<" cadena: "<<data->cadena<<endl;
 		data->cadena = data->cadena + largoseq/2;
 		desv=0;
@@ -260,7 +259,8 @@ void *Funcion(void *ptr){
  *  4) Las llamadas que calculan la función definida en algoritmos.c para rellenar las tablas de energía.
  *  */
 int main(int argc, char** argv) {
-	int i,h;
+	int i,h,fileIndex = 0;;
+	double t1;
 	ifstream cf;
 	string seq, s_random, segmento, copiaseg;
 	//double t1;
@@ -272,7 +272,6 @@ int main(int argc, char** argv) {
 	ILSA = FALSE;
 	NOISOLATE = FALSE;
 	/* Leyendo linea de comandos */
-	int fileIndex = 0;
 	i = 1;
 	while (i < argc) {
 		if (argv[i][0] == '-') {
@@ -338,6 +337,8 @@ int main(int argc, char** argv) {
 	if(redondeo>0.49)
 		NUM2++;
 	//int cadena = (largoseq/2) * NUM2;
+	t1 = 0;
+	t1 = segundos();  // Se empieza a calcular el tiempo para el Z-Score
 	for(h = 0; h < numthreads; h = h + 1){
 		if(h == 0){
 			data[h]->start = 0;
@@ -351,16 +352,19 @@ int main(int argc, char** argv) {
 			if(h == (numthreads - 1)){
 				data[h]->start = data[h-1]->stop;
 				data[h]->stop = NUM3;
-				populate("combinaciones",false);	
+//				populate("combinaciones",false);
 			}
 			else{
 				data[h]->start = data[h-1]->stop;
 				data[h]->stop = NUM2 + data[h-1]->stop;
-				populate("combinaciones",false);				
+//				populate("combinaciones",false);				
 			}
 		}
+		populate("combinaciones",false);
 		pthread_create(&thread[h], &attribute, Funcion, (void *) data[h]);
 	}
+	t1 = segundos() - t1; // Calculo de tiempo para la energia de la secuencia completa
+	cout << "El calculo del Z-Score para todos los segmentos demoro "<<t1<<" segundos"<<endl<<endl;
 	pthread_attr_destroy(&attribute); 
     for (i = 0; i < numthreads; i = i + 1)
         pthread_join(thread[i],&exit_status);

@@ -191,7 +191,8 @@ int StrShuffle(string &s1, string s2)
 
 void *Funcion(void *ptr){
 	int p;
-	string seq, s_random, segmento, copiaseg;
+	string seq, segmento, copiaseg;
+	cout << copiaseg <<endl;
 	int energy;
 	float energia;
 	double energy_random_prom,valor_extraido;
@@ -207,7 +208,6 @@ void *Funcion(void *ptr){
 			segmento = s.substr(data->cadena);
 		}
 		//cout <<"\nPara "<< p << " comienzo "<<data->start << " y final "<<data->stop<<" cadena: "<<data->cadena<<endl;	
-		//pthread_mutex_lock(&mutex);
 		init_variables(largoseq);
 		int **fbp = NULL, **pbp = NULL;
 		int numfConstraints = 0, numpConstraints = 0;
@@ -216,19 +216,15 @@ void *Funcion(void *ptr){
 		//populate("combinaciones",false); //Lectura de archivos termodinámicos
 		initTables(largoseq); // Se inicializan variables globales de acuerdo a las bases de la secuencia
 		energy = calculate(largoseq, fbp, pbp, 0, 0); 
-	    //pthread_mutex_unlock(&mutex);
 	    energia = energy/100.00;
 	    //cout << "\nEnergia minima libre: " << energia<<" para segmento "<< segmento <<endl;
 		for (int i=0; i<1000; i++){
 			StrShuffle(copiaseg,segmento); // NO demora, no es necesario paralelizar
-		//	pthread_mutex_lock(&mutex);
 			init_variables(largoseq);
 			if (handle_IUPAC_code(copiaseg, largoseq)  == FAILURE) // Para el error
-				exit(0);
-		//	populate("combinaciones",false);			
+				exit(0);			
 			initTables(largoseq);
 			valor_extraido = calculate(largoseq, fbp, pbp, numfConstraints, numpConstraints);
-		//	pthread_mutex_unlock(&mutex);
 			energy_random_prom = valor_extraido + energy_random_prom; 
 			energy_random_desv[i] = valor_extraido/100.00;
 		}
@@ -238,7 +234,8 @@ void *Funcion(void *ptr){
 		desv = sqrt(desv/1000);
 		Z = (energia - (energy_random_prom))/desv;
 		//printf("Thread: %i  Valor-Z = %f\n",data->thread, Z);
-		cout << "En el segmento " << p  <<" : "<< segmento << " se tiene el valor Z " << Z <<endl;
+		//cout << "En el segmento " << p  <<" : "<< segmento << " se tiene el valor Z " << Z <<endl;
+		cout << "En el segmento " << p  <<" se tiene el valor Z " << Z <<endl;
 		//cout <<"\nPara "<< p << " comienzo "<<data->start << " y final "<<data->stop<<" cadena: "<<data->cadena<<endl;
 		data->cadena = data->cadena + largoseq/2;
 		desv=0;
@@ -262,7 +259,7 @@ int main(int argc, char** argv) {
 	int i,h,fileIndex = 0;;
 	double t1;
 	ifstream cf;
-	string seq, s_random, segmento, copiaseg;
+	string seq, s_random, segmento;
 	//double t1;
 	cout <<  "Ingrese el largo de los segmentos: \n" ; 
 	cin >> largoseq;
@@ -364,10 +361,10 @@ int main(int argc, char** argv) {
 		pthread_create(&thread[h], &attribute, Funcion, (void *) data[h]);
 	}
 	pthread_attr_destroy(&attribute);
-	t1 = segundos() - t1; // Calculo de tiempo para la energia de la secuencia completa
-	cout << "El calculo del Z-Score para todos los segmentos demoro "<<t1<<" segundos"<<endl<<endl;
     for (i = 0; i < numthreads; i = i + 1)
         pthread_join(thread[i],&exit_status);
+    t1 = segundos() - t1; // Calculo de tiempo para la energia de la secuencia completa
+	cout << "El calculo del Z-Score para todos los segmentos demoro "<<t1<<" segundos"<<endl<<endl;
 	return 0;
 }
 

@@ -192,7 +192,6 @@ int StrShuffle(string &s1, string s2)
 void *Funcion(void *ptr){
 	int p;
 	string seq, segmento, copiaseg;
-	cout << copiaseg <<endl;
 	int energy;
 	float energia;
 	double energy_random_prom,valor_extraido;

@@ -1,0 +1,28 @@
+
+--------------------------------------------------   Con 100 de iteración   ----------------------------------------------------------------------
+
+0,1 % del gen -> 4707 largo aproximadamente.
+
+con 1 thread
+segmentos de 50 (184 segmentos) = 35.6465 segundos -> 0.6 minutos
+segmentos de 100 (91 segmentos) = 148.274 segundos -> 2.4712 minutos
+segmentos de 200 (45 segmentos) = 204.002 segundos -> 3.4 minutos
+segmentos de 300 (29 segmentos) = 402.68 segundos -> 6.7 minutos
+segmentos de 400 (22 segmentos) = 931.74 segundos -> 15.529 minutos
+
+con 2 threads
+segmentos de 50 (184 segmentos) = 18.8568 segundos -> 0.31 minutos
+segmentos de 100 (91 segmentos) = 76.8662 segundos -> 1.28 minutos
+segmentos de 200 (45 segmentos) = 204.002 segundos -> 3.4 minutos
+segmentos de 300 (29 segmentos) = 326.889 segundos -> 5.44815 minutos
+segmentos de 400 (22 segmentos) = 487.041 segundos -> 8.11 minutos
+
+con 4 threads
+segmentos de 50 (184 segmentos) = 13.6342 segundos -> 0.22 minutos
+segmentos de 100 (91 segmentos) = 56.6 segundos -> 0.9 minutos
+segmentos de 200 (45 segmentos) = 151.7 segundos -> 2.52 minutos
+segmentos de 300 (29 segmentos) = 252.7 segundos -> 4.21 minutos
+segmentos de 400 (22 segmentos) = 363.6 segundos -> 6.06 minutos
+
+
+

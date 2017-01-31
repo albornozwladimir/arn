@@ -192,11 +192,10 @@ int StrShuffle(string &s1, string s2)
 void *Funcion(void *ptr){
 	int p;
 	string seq, segmento, copiaseg;
-	cout << copiaseg <<endl;
 	int energy;
 	float energia;
 	double energy_random_prom,valor_extraido;
-	double energy_random_desv[1000];
+	double energy_random_desv[100];
 	double desv=0;
 	double Z;
 	//double t1;
@@ -218,7 +217,7 @@ void *Funcion(void *ptr){
 		energy = calculate(largoseq, fbp, pbp, 0, 0); 
 	    energia = energy/100.00;
 	    //cout << "\nEnergia minima libre: " << energia<<" para segmento "<< segmento <<endl;
-		for (int i=0; i<1000; i++){
+		for (int i=0; i<100; i++){
 			StrShuffle(copiaseg,segmento); // NO demora, no es necesario paralelizar
 			init_variables(largoseq);
 			if (handle_IUPAC_code(copiaseg, largoseq)  == FAILURE) // Para el error
@@ -228,10 +227,10 @@ void *Funcion(void *ptr){
 			energy_random_prom = valor_extraido + energy_random_prom; 
 			energy_random_desv[i] = valor_extraido/100.00;
 		}
-		energy_random_prom = energy_random_prom/(100000);
-		for (int j=0; j<1000; j++)
+		energy_random_prom = energy_random_prom/(10000); //100000
+		for (int j=0; j<100; j++)
 			desv = (energy_random_desv[j] - energy_random_prom)*(energy_random_desv[j] - energy_random_prom)+desv; 
-		desv = sqrt(desv/1000);
+		desv = sqrt(desv/100);
 		Z = (energia - (energy_random_prom))/desv;
 		//printf("Thread: %i  Valor-Z = %f\n",data->thread, Z);
 		//cout << "En el segmento " << p  <<" : "<< segmento << " se tiene el valor Z " << Z <<endl;
